@@ -13,8 +13,8 @@ sub init()
     m.swimlaneContainer = m.top.findNode("swimlaneContainer")
     
     ' Set up observers for configuration fields
-    m.top.observeField("backgroundColor", "onBackgroundColorChanged")
-    m.top.observeField("textColor", "onTextColorChanged")
+    m.top.observeField("appBgColor", "onBackgroundColorChanged")
+    m.top.observeField("appTextColor", "onTextColorChanged")
     
     ' Set initial focus
     m.top.setFocus(true)
@@ -23,32 +23,32 @@ sub init()
     print "[MainScene] Waiting for configuration..."
 end sub
 
-' Called when backgroundColor is set from main
+' Called when appBgColor is set from main
 sub onBackgroundColorChanged()
-    if m.top.backgroundColor <> "" then
-        m.top.backgroundColor = m.top.backgroundColor
-        print "[MainScene] Background color set to: "; m.top.backgroundColor
+    if m.top.appBgColor <> "" then
+        m.top.backgroundColor = m.top.appBgColor
+        print "[MainScene] Background color set to: "; m.top.appBgColor
     end if
 end sub
 
-' Called when textColor is set from main
+' Called when appTextColor is set from main
 sub onTextColorChanged()
-    if m.top.textColor <> "" then
+    if m.top.appTextColor <> "" then
         ' Apply text color to UI elements
         if m.appTitle <> invalid then
-            m.appTitle.color = m.top.textColor
+            m.appTitle.color = m.top.appTextColor
         end if
         
         if m.loadingLabel <> invalid then
-            m.loadingLabel.color = m.top.textColor
+            m.loadingLabel.color = m.top.appTextColor
         end if
         
-        print "[MainScene] Text color set to: "; m.top.textColor
+        print "[MainScene] Text color set to: "; m.top.appTextColor
     end if
 end sub
 
 ' Handle key events (remote control input)
-sub onKeyEvent(key as String, press as Boolean) as Boolean
+function onKeyEvent(key as String, press as Boolean) as Boolean
     handled = false
     
     if press then
@@ -66,7 +66,7 @@ sub onKeyEvent(key as String, press as Boolean) as Boolean
     end if
     
     return handled
-end sub
+end function
 
 ' Helper function to show/hide loading indicator
 sub showLoading(visible as Boolean)
