@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="MainScene" extends="Scene">
+    <interface>
+        <!-- Configuration fields passed from main -->
+        <field id="backgroundColor" type="string" />
+        <field id="textColor" type="string" />
+    </interface>
+    
+    <children>
+        <!-- Title -->
+        <Label
+            id="appTitle"
+            text="Flickr Gallery"
+            translation="[960, 60]"
+            horizAlign="center"
+            font="font:LargeBoldSystemFont"
+        />
+        
+        <!-- Loading indicator (initially visible) -->
+        <Label
+            id="loadingLabel"
+            text="Loading..."
+            translation="[960, 540]"
+            horizAlign="center"
+            vertAlign="center"
+            font="font:MediumBoldSystemFont"
+        />
+        
+        <!-- Container for swimlane rows (to be added later) -->
+        <LayoutGroup
+            id="swimlaneContainer"
+            translation="[60, 150]"
+            layoutDirection="vert"
+            itemSpacings="[40]"
+            visible="false"
+        />
+    </children>
+    
+    <script type="text/brightscript" uri="MainScene.brs" />
+</component>
