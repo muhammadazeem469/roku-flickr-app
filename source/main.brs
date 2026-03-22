@@ -34,6 +34,13 @@ sub Main()
     end if
     print "[INIT] MainScene loaded successfully"
     
+    ' Load UI configuration and pass to scene
+    print "[INIT] Loading UI configuration..."
+    uiConfig = GetUIConfig()
+    scene.backgroundColor = uiConfig.COLORS.BACKGROUND
+    scene.textColor = uiConfig.COLORS.TEXT_PRIMARY
+    print "[INIT] UI configuration applied to scene"
+    
     print "[INIT] Displaying screen..."
     screen.show()
     print "[INIT] Screen displayed"
