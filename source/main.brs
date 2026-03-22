@@ -4,11 +4,14 @@
 ' ******************************************************
 
 sub Main()
+    
     print "========================================="
     print "Flickr Gallery Roku Channel Starting..."
     print "Version: 1.0.0"
     print "========================================="
     
+    TestImageModelSuite()
+    TestCategoryModelSuite()
     ' Initialize screen
     print "[INIT] Creating roSGScreen..."
     screen = CreateObject("roSGScreen")

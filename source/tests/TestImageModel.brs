@@ -1,23 +1,29 @@
+' ******************************************************
 ' TestImageModel.brs
 ' Test the ImageModel, ImageMapper, and utilities
+' ******************************************************
 
-function TestImageModelSuite()
+function TestImageModelSuite() as Boolean
+    print ""
     print "================================================"
     print "TESTING IMAGE MODEL SUITE"
     print "================================================"
     
-    TestImageMapper()
-    TestImageUrlBuilder()
-    TestImageValidator()
-    TestContentNodeConverter()
+    TestImageModel_Mapper()
+    TestImageModel_UrlBuilder()
+    TestImageModel_Validator()
+    TestImageModel_ContentNodeConverter()  ' ← RENAMED
     
     print "================================================"
-    print "ALL TESTS COMPLETE"
+    print "IMAGE MODEL TESTS COMPLETE"
     print "================================================"
+    print ""
+    
+    return true
 end function
 
 
-function TestImageMapper()
+function TestImageModel_Mapper() as Boolean
     print ""
     print "--- Testing ImageMapper ---"
     
@@ -54,10 +60,12 @@ function TestImageMapper()
     print "Thumbnail URL:", imageModel.url_thumbnail
     print "Medium URL:", imageModel.url_medium
     print ""
+    
+    return true
 end function
 
 
-function TestImageUrlBuilder()
+function TestImageModel_UrlBuilder() as Boolean
     print "--- Testing ImageUrlBuilder ---"
     
     photoObj = {
@@ -81,10 +89,12 @@ function TestImageUrlBuilder()
     invalidUrl = builder.build(invalidPhoto, "q")
     print "Invalid photo URL (should be empty):", invalidUrl
     print ""
+    
+    return true
 end function
 
 
-function TestImageValidator()
+function TestImageModel_Validator() as Boolean
     print "--- Testing ImageValidator ---"
     
     ' Valid image
@@ -103,11 +113,13 @@ function TestImageValidator()
     print "Valid image is valid:", validator.isValid(validImage)
     print "Invalid image is valid:", validator.isValid(invalidImage)
     print ""
+    
+    return true
 end function
 
 
-function TestContentNodeConverter()
-    print "--- Testing ContentNodeConverter ---"
+function TestImageModel_ContentNodeConverter() as Boolean  ' ← RENAMED
+    print "--- Testing ContentNodeConverter (ImageModel) ---"
     
     ' Create a sample ImageModel
     imageModel = CreateImageModel()
@@ -129,4 +141,6 @@ function TestContentNodeConverter()
     print "ContentNode imageWidth:", contentNode.imageWidth
     print "ContentNode imageHeight:", contentNode.imageHeight
     print ""
+    
+    return true
 end function
