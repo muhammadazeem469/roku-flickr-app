@@ -1,12 +1,45 @@
+' ******************************************************
+' main.brs
+' Application entry point for Flickr Gallery
+' ******************************************************
+
 sub Main()
-    ' Initialize the application
+    print "========================================="
+    print "Flickr Gallery Roku Channel Starting..."
+    print "Version: 1.0.0"
+    print "========================================="
+    
+    ' Initialize screen
+    print "[INIT] Creating roSGScreen..."
     screen = CreateObject("roSGScreen")
+    if screen = invalid then
+        print "[ERROR] Failed to create roSGScreen"
+        return
+    end if
+    print "[INIT] roSGScreen created successfully"
+    
+    ' Initialize message port
+    print "[INIT] Creating message port..."
     m.port = CreateObject("roMessagePort")
     screen.setMessagePort(m.port)
+    print "[INIT] Message port initialized"
     
-    ' Create main scene
+    ' Create and display main scene
+    print "[INIT] Loading MainScene component..."
     scene = screen.CreateScene("MainScene")
+    if scene = invalid then
+        print "[ERROR] Failed to create MainScene"
+        print "[ERROR] Ensure components/MainScene.xml exists"
+        return
+    end if
+    print "[INIT] MainScene loaded successfully"
+    
+    print "[INIT] Displaying screen..."
     screen.show()
+    print "[INIT] Screen displayed"
+    
+    print "[READY] Application ready - Entering event loop"
+    print "========================================="
     
     ' Main event loop
     while(true)
@@ -14,7 +47,13 @@ sub Main()
         msgType = type(msg)
         
         if msgType = "roSGScreenEvent"
-            if msg.isScreenClosed() then return
+            if msg.isScreenClosed() then
+                print "========================================="
+                print "[SHUTDOWN] Screen closed by user"
+                print "[SHUTDOWN] Flickr Gallery shutting down..."
+                print "========================================="
+                return
+            end if
         end if
     end while
 end sub
