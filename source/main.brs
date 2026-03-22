@@ -13,6 +13,7 @@ sub Main()
     TestImageModelSuite()
     TestCategoryModelSuite()
     TestMainViewModelSuite()
+    TestDetailViewModelSuite()
     ' Initialize screen
     print "[INIT] Creating roSGScreen..."
     screen = CreateObject("roSGScreen")
