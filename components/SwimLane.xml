@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ******************************************************
+  ** SwimLane.xml
+  ** Horizontal scrolling row of ImageCard components
+  ** representing a single Flickr category
+  ** Ticket: FG-014
+  ****************************************************** -->
+
+<component name="SwimLane" extends="Group">
+    <interface>
+        <!-- Data -->
+        <field id="categoryModel" type="assocarray" alwaysNotify="true" />
+
+        <!-- Layout configuration -->
+        <field id="swimlaneHeight" type="float" value="300" />
+        <field id="cardSpacing" type="float" value="20" />
+
+        <!-- State (readable by parent) -->
+        <field id="focusedCardIndex" type="integer" value="0" />
+        <field id="itemSelected" type="assocarray" alwaysNotify="true" />
+    </interface>
+
+    <children>
+        <!-- Category title -->
+        <Label
+            id="categoryTitle"
+            translation="[0, 0]"
+            width="1840"
+            height="40"
+            font="font:MediumBoldSystemFont"
+            color="0xFFFFFF"
+            vertAlign="center"
+        />
+
+        <!-- Card container - holds ImageCard children dynamically -->
+        <LayoutGroup
+            id="cardContainer"
+            translation="[0, 50]"
+            layoutDirection="horiz"
+            horizAlignment="left"
+            itemSpacings="[20]"
+        />
+
+        <!-- Loading spinner (visible while isLoading=true) -->
+        <BusySpinner
+            id="loadingIndicator"
+            translation="[920, 150]"
+            visible="false"
+        />
+
+        <!-- Empty state message -->
+        <Label
+            id="emptyMessage"
+            translation="[0, 100]"
+            width="1840"
+            height="60"
+            text="No images available"
+            font="font:MediumSystemFont"
+            color="0x888888"
+            horizAlign="center"
+            vertAlign="center"
+            visible="false"
+        />
+
+        <!-- Error state message -->
+        <Label
+            id="errorMessage"
+            translation="[0, 100]"
+            width="1840"
+            height="60"
+            font="font:MediumSystemFont"
+            color="0xFF4444"
+            horizAlign="center"
+            vertAlign="center"
+            visible="false"
+        />
+    </children>
+
+    <script type="text/brightscript" uri="pkg:/components/SwimLane.brs" />
+</component>
