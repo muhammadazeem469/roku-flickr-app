@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ******************************************************
+  ** ImageCard.xml
+  ** Reusable image card component with focus states
+  ** Ticket: FG-013
+  ****************************************************** -->
+
+<component name="ImageCard" extends="Group">
+    <interface>
+        <!-- Data fields -->
+        <field id="imageModel" type="assocarray" alwaysNotify="true" />
+        <field id="showTitle" type="boolean" value="true" />
+
+        <!-- Size configuration -->
+        <field id="cardWidth" type="float" value="250" />
+        <field id="cardHeight" type="float" value="250" />
+
+        <!-- State fields (internal) -->
+        <field id="focused" type="boolean" value="false" alwaysNotify="true" />
+    </interface>
+
+    <children>
+        <!-- Background/Container -->
+        <Rectangle
+            id="cardBackground"
+            width="250"
+            height="250"
+            color="0x000000"
+            opacity="0.0"
+        />
+
+        <!-- Image Placeholder (shown while loading or on error) -->
+        <Rectangle
+            id="placeholder"
+            width="250"
+            height="250"
+            color="0x333333"
+            visible="true"
+        />
+
+        <!-- Loading indicator (center of placeholder) -->
+        <Label
+            id="loadingLabel"
+            text="Loading..."
+            width="250"
+            height="250"
+            horizAlign="center"
+            vertAlign="center"
+            font="font:SmallSystemFont"
+            color="0xCCCCCC"
+            visible="true"
+        />
+
+        <!-- Error indicator -->
+        <Label
+            id="errorLabel"
+            text="✕"
+            width="250"
+            height="250"
+            horizAlign="center"
+            vertAlign="center"
+            font="font:LargeSystemFont"
+            color="0xFF0000"
+            visible="false"
+        />
+
+        <!-- Thumbnail Image -->
+        <Poster
+            id="thumbnail"
+            width="250"
+            height="250"
+            loadDisplayMode="scaleToFit"
+            loadingBitmapOpacity="0.0"
+            failedBitmapOpacity="0.0"
+            visible="false"
+        />
+
+        <!-- Focus Border -->
+        <Rectangle
+            id="focusBorder"
+            width="250"
+            height="250"
+            color="0x00FF00"
+            opacity="0.0"
+            blendColor="0x00FF00"
+        >
+            <Rectangle
+                width="244"
+                height="244"
+                translation="[3, 3]"
+                color="0x000000"
+            />
+        </Rectangle>
+
+        <!-- Title Label (below image) -->
+        <Label
+            id="titleLabel"
+            translation="[0, 255]"
+            width="250"
+            height="40"
+            horizAlign="center"
+            vertAlign="top"
+            font="font:SmallSystemFont"
+            color="0xFFFFFF"
+            visible="false"
+            wrap="true"
+            maxLines="2"
+            ellipsizeOnBoundary="true"
+        />
+    </children>
+
+    <script type="text/brightscript" uri="pkg:/components/ImageCard.brs" />
+</component>

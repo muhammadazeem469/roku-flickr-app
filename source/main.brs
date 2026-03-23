@@ -19,7 +19,7 @@ sub Main()
     end if
 
     TestFlickrServiceSuite()
-    TestImageUrlBuilderSuite()                    
+    TestImageUrlBuilderSuite()                   
     ' Initialize screen
     print "[INIT] Creating roSGScreen..."
     screen = CreateObject("roSGScreen")
@@ -47,9 +47,8 @@ sub Main()
     
     ' Load UI configuration and pass to scene
     print "[INIT] Loading UI configuration..."
-    uiConfig = GetUIConfig()
-    scene.appBgColor = uiConfig.COLORS.BACKGROUND
-    scene.appTextColor = uiConfig.COLORS.TEXT_PRIMARY
+    scene.appBgColor = "0x000000"     ' from UIConfig.COLORS.BACKGROUND
+    scene.appTextColor = "0xFFFFFF"   ' from UIConfig.COLORS.TEXT_PRIMARY
     print "[INIT] UI configuration applied to scene"
     
     print "[INIT] Displaying screen..."
