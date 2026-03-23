@@ -4,6 +4,10 @@
 ' Handles HTTP requests and response parsing
 ' ******************************************************
 
+' ============================================
+' EXISTING METHOD - KEEP AS IS
+' ============================================
+
 ' Fetch detailed photo information from Flickr API
 ' @param photoId - The Flickr photo ID
 ' @return Object with success flag and data/error
@@ -99,4 +103,65 @@ function FlickrService_GetPhotoInfoAsync(photoId as String, port as Object) as O
         print "[FlickrService] ERROR: Failed to initiate async request"
         return invalid
     end if
+end function
+
+
+' ============================================
+' NEW METHODS FOR FG-011
+' ============================================
+
+' Constructor - NEW
+function CreateFlickrService() as Object
+    return {
+        ' New methods
+        getInterestingImages: FlickrService_getInterestingImages
+        searchImagesByTag: FlickrService_searchImagesByTag
+        getRecentImages: FlickrService_getRecentImages
+        getImageInfo: FlickrService_getImageInfo
+        
+        ' Legacy method (keep for backward compatibility)
+        GetPhotoInfo: FlickrService_GetPhotoInfo
+        GetPhotoInfoAsync: FlickrService_GetPhotoInfoAsync
+        
+        ' Helper modules
+        apiMethods: FlickrService_ApiMethods()
+        responseParser: FlickrService_ResponseParser()
+    }
+end function
+
+
+' Wrapper for new API - calls existing method
+function FlickrService_getImageInfo(photoId as String) as Object
+    return FlickrService_GetPhotoInfo(photoId)
+end function
+
+
+' Get interesting images - delegates to ApiMethods
+function FlickrService_getInterestingImages(page as Integer, perPage as Integer) as Object
+    return m.apiMethods.getInterestingImages(page, perPage)
+end function
+
+
+' Search by tags - delegates to ApiMethods
+function FlickrService_searchImagesByTag(tags as String, page as Integer, perPage as Integer) as Object
+    return m.apiMethods.searchImagesByTag(tags, page, perPage)
+end function
+
+
+' Get recent images - delegates to ApiMethods
+function FlickrService_getRecentImages(page as Integer, perPage as Integer) as Object
+    return m.apiMethods.getRecentImages(page, perPage)
+end function
+
+
+' Create error response helper
+function FlickrService_createErrorResponse(errorMessage as String) as Object
+    return {
+        success: false
+        data: []
+        error: errorMessage
+        page: 0
+        pages: 0
+        total: 0
+    }
 end function

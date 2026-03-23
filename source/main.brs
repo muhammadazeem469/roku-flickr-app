@@ -4,7 +4,7 @@
 ' ******************************************************
 
 sub Main()
-    
+    config = GetApiConfig()
     print "========================================="
     print "Flickr Gallery Roku Channel Starting..."
     print "Version: 1.0.0"
@@ -14,7 +14,11 @@ sub Main()
     TestCategoryModelSuite()
     TestMainViewModelSuite()
     TestDetailViewModelSuite()
-    TestNetworkUtilsSuite() 
+    if config.RUN_NETWORK_TESTS = true then
+        TestNetworkUtilsSuite()
+    end if
+
+    TestFlickrServiceSuite()                    
     ' Initialize screen
     print "[INIT] Creating roSGScreen..."
     screen = CreateObject("roSGScreen")
