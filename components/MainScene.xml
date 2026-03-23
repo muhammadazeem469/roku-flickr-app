@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ******************************************************
+  ** MainScene.xml
+  ** Root scene - displays 12 vertical SwimLane rows
+  ** Ticket: FG-015
+  ****************************************************** -->
+
 <component name="MainScene" extends="Scene">
     <interface>
         <field id="appBgColor" type="string" />
@@ -6,31 +12,100 @@
     </interface>
 
     <children>
+
+        <!-- App title header -->
         <Label
             id="appTitle"
             text="Flickr Gallery"
-            translation="[960, 60]"
-            horizAlign="center"
-            font="font:LargeSystemFont"
+            translation="[60, 30]"
+            width="1800"
+            height="50"
+            font="font:LargeBoldSystemFont"
+            color="0xFFFFFF"
         />
 
+        <!-- Global loading indicator (shown during init) -->
         <Label
             id="loadingLabel"
-            text="Loading..."
+            text="Loading categories..."
             translation="[960, 540]"
             horizAlign="center"
             vertAlign="center"
             font="font:MediumSystemFont"
+            color="0xCCCCCC"
+            visible="true"
         />
 
-        <LayoutGroup
-            id="swimlaneContainer"
-            translation="[60, 150]"
-            layoutDirection="vert"
-            itemSpacings="[40]"
+        <!-- Global error message -->
+        <Label
+            id="globalError"
+            translation="[960, 540]"
+            width="1800"
+            height="60"
+            horizAlign="center"
+            vertAlign="center"
+            font="font:MediumSystemFont"
+            color="0xFF4444"
             visible="false"
         />
+
+        <!-- Vertical swimlane container -->
+        <ScrollingGroup
+            id="swimlanesScroller"
+            translation="[60, 100]"
+            visible="false"
+        >
+            <LayoutGroup
+                id="swimlanesContainer"
+                layoutDirection="vert"
+                itemSpacings="[40]"
+            >
+                <SwimLane id="swimlane_0" />
+                <SwimLane id="swimlane_1" />
+                <SwimLane id="swimlane_2" />
+                <SwimLane id="swimlane_3" />
+                <SwimLane id="swimlane_4" />
+                <SwimLane id="swimlane_5" />
+                <SwimLane id="swimlane_6" />
+                <SwimLane id="swimlane_7" />
+                <SwimLane id="swimlane_8" />
+                <SwimLane id="swimlane_9" />
+                <SwimLane id="swimlane_10" />
+                <SwimLane id="swimlane_11" />
+            </LayoutGroup>
+        </ScrollingGroup>
+
     </children>
 
+    <!--
+        Script load order matters — dependencies must come before dependents.
+
+        Layer 1: Validators (no dependencies)
+        Layer 2: Models (depend on validators)
+        Layer 3: Config (no dependencies)
+        Layer 4: ViewModels (depend on models + config)
+        Layer 5: Scene logic
+    -->
+
+    <!-- Layer 1: Validators -->
+    <script type="text/brightscript" uri="pkg:/source/Validators/ImageValidators.brs" />
+
+    <!-- Layer 2: Models -->
+    <script type="text/brightscript" uri="pkg:/source/models/ImageModel.brs" />
+    <script type="text/brightscript" uri="pkg:/source/models/CategoryModel.brs" />
+    <script type="text/brightscript" uri="pkg:/source/models/CategoryStateManager.brs" />
+    <script type="text/brightscript" uri="pkg:/source/models/CategoryImageManager.brs" />
+    <script type="text/brightscript" uri="pkg:/source/models/CategoryPaginationManager.brs" />
+
+    <!-- Layer 3: Config -->
+    <script type="text/brightscript" uri="pkg:/source/config/CategoryConfig.brs" />
+
+    <!-- Layer 4: ViewModels -->
+    <script type="text/brightscript" uri="pkg:/source/viewmodels/MainViewModel_StateManager.brs" />
+    <script type="text/brightscript" uri="pkg:/source/viewmodels/MainViewModel_CategoryLoader.brs" />
+    <script type="text/brightscript" uri="pkg:/source/viewmodels/MainViewModel.brs" />
+
+    <!-- Layer 5: Scene logic -->
     <script type="text/brightscript" uri="pkg:/components/MainScene.brs" />
+
 </component>
