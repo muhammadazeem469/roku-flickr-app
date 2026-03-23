@@ -18,7 +18,8 @@ sub Main()
         TestNetworkUtilsSuite()
     end if
 
-    TestFlickrServiceSuite()                    
+    TestFlickrServiceSuite()
+    TestImageUrlBuilderSuite()                    
     ' Initialize screen
     print "[INIT] Creating roSGScreen..."
     screen = CreateObject("roSGScreen")
