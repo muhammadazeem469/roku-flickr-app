@@ -2,6 +2,7 @@
 ' MainScene.brs (RowList - FINAL FIX)
 ' CRITICAL FIX: Fixed focus sequence to prevent invalid focus state
 ' UPDATED: FG-017 - Integrated DetailScene navigation
+' UPDATED: FG-020 - Task-based category loading for HTTP on Task thread
 ' ******************************************************
 
 sub init()
@@ -41,18 +42,140 @@ sub init()
     print "[MainScene] Creating ViewModel..."
     m.viewModel = CreateMainViewModel()
     m.viewModel.init()
+    
+    ' Initialize Task management for async loading
+    m.activeTasks = []
+    m.loadedCategoryCount = 0
+    
+    ' Prepare load queue
     m.viewModel.loadAllCategories()
+    
     print "[MainScene] ViewModel initialized"
 
     ' Initialize detail scene reference
     m.detailScene = invalid
 
-    ' Populate RowList with data
-    populateRowList()
+    ' Start loading categories with Tasks
+    startCategoryLoading()
 
     print "========================================="
     print "[MainScene] INIT COMPLETE"
     print "========================================="
+end sub
+
+
+' ******************************************************
+' Start loading categories using Task thread
+' ******************************************************
+sub startCategoryLoading()
+    print "[MainScene] ========================================="
+    print "[MainScene] STARTING CATEGORY LOADING"
+    print "[MainScene] ========================================="
+    
+    ' Check if we have a load queue
+    if m.viewModel.loadQueue = invalid or m.viewModel.loadQueue.Count() = 0 then
+        print "[MainScene] ERROR: No categories to load"
+        showGlobalError("No categories configured")
+        return
+    end if
+    
+    print "[MainScene] Categories to load: "; m.viewModel.loadQueue.Count()
+    
+    ' Load first category (triggers sequential loading)
+    loadNextCategory()
+end sub
+
+
+' ******************************************************
+' Load next category from queue using Task
+' ******************************************************
+sub loadNextCategory()
+    ' Check if more categories to load
+    if m.viewModel.loadQueue = invalid or m.viewModel.loadQueue.Count() = 0 then
+        print "[MainScene] All categories loaded!"
+        
+        ' Populate UI with loaded data
+        if m.loadedCategoryCount > 0 then
+            populateRowList()
+        else
+            showGlobalError("No categories could be loaded")
+        end if
+        
+        return
+    end if
+    
+    ' Get next category index
+    categoryIndex = m.viewModel.loadQueue.Shift()
+    
+    print "[MainScene] Loading category index: "; categoryIndex
+    
+    ' Create task for this category
+    task = m.viewModel.categoryLoader.loadCategoryWithTask(m.viewModel, categoryIndex, m.top)
+    
+    if task = invalid then
+        print "[MainScene] ERROR: Failed to create task for category "; categoryIndex
+        
+        ' Try next category
+        loadNextCategory()
+        return
+    end if
+    
+    ' Observe task completion
+    task.observeField("result", "onCategoryLoaded")
+    
+    ' Store task reference
+    m.activeTasks.Push(task)
+    
+    ' Start task
+    task.control = "RUN"
+    
+    print "[MainScene] Task started for category "; categoryIndex
+end sub
+
+
+' ******************************************************
+' Handle category data loaded from Task
+' ******************************************************
+sub onCategoryLoaded(event as Object)
+    print "[MainScene] ========================================="
+    print "[MainScene] CATEGORY LOADED CALLBACK"
+    print "[MainScene] ========================================="
+    
+    ' Get task and result
+    task = event.getRoSGNode()
+    result = task.result
+    categoryIndex = task.categoryIndex
+    
+    print "[MainScene] Category index: "; categoryIndex
+    print "[MainScene] Result success: "; result.success
+    
+    ' Parse the API response
+    m.viewModel.categoryLoader.parseApiResponse(m.viewModel, categoryIndex, result)
+    
+    ' Update counter
+    if result.success then
+        m.loadedCategoryCount = m.loadedCategoryCount + 1
+        print "[MainScene] Successfully loaded "; m.loadedCategoryCount; " categories so far"
+    else
+        print "[MainScene] Failed to load category "; categoryIndex; ": "; result.error
+    end if
+    
+    ' Clean up task
+    task.unobserveField("result")
+    
+    ' Remove from active tasks
+    for i = 0 to m.activeTasks.Count() - 1
+        if m.activeTasks[i].id = task.id then
+            m.activeTasks.Delete(i)
+            exit for
+        end if
+    end for
+    
+    ' Remove task from scene graph
+    m.top.removeChild(task)
+    
+    ' Load next category
+    loadNextCategory()
 end sub
 
 
@@ -103,16 +226,6 @@ sub populateRowList()
         return
     end if
 
-    ' Handle loading state
-    if m.viewModel.isInitializing then
-        print "[MainScene] Still initializing, showing loading..."
-        m.loadingLabel.visible = true
-        m.rowList.visible = false
-        return
-    end if
-
-    print "[MainScene] Categories loaded: "; categories.count()
-
     ' Validate categories
     if categories = invalid or categories.count() = 0 then
         print "[MainScene] ERROR: No categories available"
@@ -135,10 +248,6 @@ sub populateRowList()
         print "[MainScene] ----------------------------------------"
         print "[MainScene] Row "; rowIndex; ": "; category.name
         
-        ' Create row node
-        rowNode = CreateObject("roSGNode", "ContentNode")
-        rowNode.title = category.display_name  ' Use display_name for UI
-        
         ' Get images for this category
         images = category.images
         
@@ -155,6 +264,10 @@ sub populateRowList()
         end if
         
         print "[MainScene]   Images in category: "; images.count()
+        
+        ' Create row node
+        rowNode = CreateObject("roSGNode", "ContentNode")
+        rowNode.title = category.display_name  ' Use display_name for UI
         
         ' Add images to row
         itemIndex = 0

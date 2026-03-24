@@ -119,5 +119,6 @@
 
     <!-- Scene logic -->
     <script type="text/brightscript" uri="pkg:/components/MainScene.brs" />
-
+    <!-- Add this at the bottom of your script imports -->
+    <script type="text/brightscript" uri="pkg:/source/tests/TestMainViewModel_CategoryLoading.brs" />
 </component>

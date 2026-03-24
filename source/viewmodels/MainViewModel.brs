@@ -72,7 +72,8 @@ function MainViewModel_init() as Void
 end function
 
 
-' Load all categories (mock for now, real API in Sprint 3)
+' Load all categories using hybrid strategy (Featured first, then rest)
+' FG-020: Real Flickr API integration
 function MainViewModel_loadAllCategories() as Void
     print "[MainViewModel] Loading all categories..."
     
@@ -81,12 +82,12 @@ function MainViewModel_loadAllCategories() as Void
         return
     end if
     
-    ' Load each category
-    for i = 0 to m.categories.Count() - 1
-        m.categoryLoader.loadCategory(m, i)
-    end for
+    ' Delegate to CategoryLoader which implements hybrid loading:
+    ' 1. Featured category first (priority)
+    ' 2. Then remaining categories sequentially
+    m.categoryLoader.loadAllCategories(m)
     
-    print "[MainViewModel] All categories loaded"
+    print "[MainViewModel] Category loading initiated"
 end function
 
 
