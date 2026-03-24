@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ******************************************************
+  ** PhotoInfoTask.xml
+  ** Task node for loading photo information from Flickr API
+  ** Runs on a separate thread to avoid blocking the render thread
+  ****************************************************** -->
+
+<component name="PhotoInfoTask" extends="Task">
+    <interface>
+        <!-- Input -->
+        <field id="photoId" type="string" />
+        
+        <!-- Output -->
+        <field id="result" type="assocarray" />
+    </interface>
+
+    <script type="text/brightscript" uri="pkg:/components/tasks/PhotoInfoTask.brs" />
+</component>

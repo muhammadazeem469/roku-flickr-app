@@ -5,6 +5,7 @@
   ** 1. itemSize changed to [280, 210] for proper horizontal layout
   ** 2. rowLabelOffset changed to [[0, 20]] (array of arrays)
   ** 3. Added rowItemSize for consistency
+  ** 4. UPDATED: Added FlickrService imports for real API integration
   ****************************************************** -->
 
 <component name="MainScene" extends="Scene">
@@ -81,6 +82,15 @@
     <script type="text/brightscript" uri="pkg:/source/utils/CategoryContentNodeConverter.brs" />
     <script type="text/brightscript" uri="pkg:/source/utils/ImageUrlBuilder.brs" />
     <script type="text/brightscript" uri="pkg:/source/utils/ImageUrlBuilder_Extended.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/NetworkUtils.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/ApiHelper.brs" />
+
+    <!-- Network Layer -->
+    <script type="text/brightscript" uri="pkg:/source/network/NetworkValidator.brs" />
+    <script type="text/brightscript" uri="pkg:/source/network/RetryManager.brs" />
+    <script type="text/brightscript" uri="pkg:/source/network/ErrorHandler.brs" />
+    <script type="text/brightscript" uri="pkg:/source/network/JsonParser.brs" />
+    <script type="text/brightscript" uri="pkg:/source/network/HttpClient.brs" />
 
     <!-- Models -->
     <script type="text/brightscript" uri="pkg:/source/models/ImageModel.brs" />
@@ -96,6 +106,11 @@
     <script type="text/brightscript" uri="pkg:/source/config/ImageConfig.brs" />
     <script type="text/brightscript" uri="pkg:/source/config/NetworkConfig.brs" />
     <script type="text/brightscript" uri="pkg:/source/config/UIConfig.brs" />
+
+    <!-- Services (NEW - Required for FlickrService) -->
+    <script type="text/brightscript" uri="pkg:/source/services/FlickrService_ResponseParser.brs" />
+    <script type="text/brightscript" uri="pkg:/source/services/FlickrService_ApiMethods.brs" />
+    <script type="text/brightscript" uri="pkg:/source/services/FlickrService.brs" />
 
     <!-- ViewModels -->
     <script type="text/brightscript" uri="pkg:/source/viewmodels/MainViewModel_StateManager.brs" />
