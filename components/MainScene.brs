@@ -1,440 +1,448 @@
 ' ******************************************************
-' MainScene.brs (RowList - FINAL FIX)
-' CRITICAL FIX: Fixed focus sequence to prevent invalid focus state
-' UPDATED: FG-017 - Integrated DetailScene navigation
-' UPDATED: FG-020 - Task-based category loading for HTTP on Task thread
+' MainScene.brs
+' UPDATED: FG-021 - Implement Loading States in UI
+'
+' Loading state approach (simplified and reliable):
+'   - loadingBackdrop, globalSpinner, loadingProgress
+'     are flat nodes (NOT inside a Group) so visible
+'     toggling works reliably on all Roku firmware.
+'   - No opacity animations on Group — BusySpinner does
+'     not support width/height, Group has no opacity field
+'     on older firmware. Simple visible=true/false is safe.
+'   - 2-second minimum spinner display time so user can
+'     actually see it (spinnerMinTimer).
+'   - Per-row placeholder "Loading..." items in RowList
+'     replaced with real images as each Task completes.
 ' ******************************************************
 
 sub init()
     print "========================================="
-    print "[MainScene] INIT START"
+    print "[MainScene] INIT START (FG-021)"
     print "========================================="
 
-    ' Get UI references
-    m.appTitle      = m.top.findNode("appTitle")
-    m.loadingLabel  = m.top.findNode("loadingLabel")
-    m.globalError   = m.top.findNode("globalError")
-    m.rowList       = m.top.findNode("categoryRowList")
+    ' === UI References ===
+    m.appTitle        = m.top.findNode("appTitle")
+    m.loadingBackdrop = m.top.findNode("loadingBackdrop")
+    m.spinnerGroup    = m.top.findNode("spinnerGroup")
+    m.spinnerAnim     = m.top.findNode("spinnerAnim")
+    m.loadingProgress = m.top.findNode("loadingProgress")
+    m.globalError     = m.top.findNode("globalError")
+    m.rowList         = m.top.findNode("categoryRowList")
 
     if m.rowList = invalid then
         print "[MainScene] ERROR: RowList not found!"
         return
     end if
 
-    print "[MainScene] RowList found successfully"
-
-    ' === CRITICAL: Set focus on Scene FIRST ===
-    print "[MainScene] Setting Scene focus FIRST..."
+    ' === Focus: Scene first ===
     m.top.setFocus(true)
 
-    ' Configure RowList BEFORE setting content
+    ' === Configure RowList ===
     configureRowList()
 
-    ' Observe RowList events
+    ' === Observe RowList events ===
     m.rowList.observeField("itemSelected", "onItemSelected")
-    m.rowList.observeField("itemFocused", "onItemFocused")
+    m.rowList.observeField("itemFocused",  "onItemFocused")
 
-    ' Observe theme changes
-    m.top.observeField("appBgColor", "onBackgroundColorChanged")
+    ' === Theme observers ===
+    m.top.observeField("appBgColor",   "onBackgroundColorChanged")
     m.top.observeField("appTextColor", "onTextColorChanged")
 
-    ' Initialize ViewModel
+    ' === ViewModel init ===
     print "[MainScene] Creating ViewModel..."
     m.viewModel = CreateMainViewModel()
     m.viewModel.init()
-    
-    ' Initialize Task management for async loading
-    m.activeTasks = []
-    m.loadedCategoryCount = 0
-    
-    ' Prepare load queue
-    m.viewModel.loadAllCategories()
-    
-    print "[MainScene] ViewModel initialized"
 
-    ' Initialize detail scene reference
+    ' === Loading state tracking (FG-021) ===
+    m.totalCategories       = m.viewModel.categories.Count()
+    m.loadedCategoryCount   = 0
+    m.firstRowRevealed      = false
+    m.firstDataReady        = false
+    m.spinnerMinTimeElapsed = false
+    m.activeTasks           = []
+
+    ' Show spinner + loading text immediately
+    showGlobalLoading()
+
+    ' 2-second minimum so spinner is always visible long enough to read
+    spinnerTimer = CreateObject("roSGNode", "Timer")
+    spinnerTimer.duration = 2.0
+    spinnerTimer.repeat   = false
+    spinnerTimer.observeField("fire", "onSpinnerMinTimeElapsed")
+    m.spinnerMinTimer = spinnerTimer
+    spinnerTimer.control = "start"
+    print "[MainScene] Spinner min timer started (2s)"
+
+    ' Update progress label
+    updateLoadingProgress(0, m.totalCategories)
+
+    ' === Build placeholder RowList (FG-021) ===
+    buildPlaceholderRowList()
+
+    ' === Prepare load queue ===
+    m.viewModel.loadAllCategories()
+
+    ' === Detail scene reference ===
     m.detailScene = invalid
 
-    ' Start loading categories with Tasks
+    ' === Start loading ===
     startCategoryLoading()
 
     print "========================================="
-    print "[MainScene] INIT COMPLETE"
+    print "[MainScene] INIT COMPLETE (FG-021)"
     print "========================================="
 end sub
 
 
 ' ******************************************************
-' Start loading categories using Task thread
+' Show all global loading nodes (FG-021)
+' ******************************************************
+sub showGlobalLoading()
+    if m.loadingBackdrop <> invalid then m.loadingBackdrop.visible = true
+    if m.spinnerGroup    <> invalid then m.spinnerGroup.visible    = true
+    if m.loadingProgress <> invalid then m.loadingProgress.visible = true
+    ' Start rotation animation
+    if m.spinnerAnim <> invalid then m.spinnerAnim.control = "start"
+end sub
+
+
+' ******************************************************
+' Hide all global loading nodes (FG-021)
+' ******************************************************
+sub hideGlobalLoading()
+    if m.loadingBackdrop <> invalid then m.loadingBackdrop.visible = false
+    if m.spinnerGroup    <> invalid then m.spinnerGroup.visible    = false
+    if m.loadingProgress <> invalid then m.loadingProgress.visible = false
+    ' Stop rotation animation
+    if m.spinnerAnim <> invalid then m.spinnerAnim.control = "stop"
+end sub
+
+
+' ******************************************************
+' Update progress label text (FG-021)
+' ******************************************************
+sub updateLoadingProgress(loaded as Integer, total as Integer)
+    if m.loadingProgress = invalid then return
+    if loaded = 0 then
+        m.loadingProgress.text = "Loading..."
+    else if total > 0 then
+        m.loadingProgress.text = loaded.ToStr() + " of " + total.ToStr() + " categories loaded"
+    end if
+end sub
+
+
+' ******************************************************
+' Minimum spinner timer fired — 2 seconds elapsed (FG-021)
+' ******************************************************
+sub onSpinnerMinTimeElapsed()
+    print "[MainScene] FG-021: Spinner min time elapsed"
+    m.spinnerMinTimeElapsed = true
+    m.spinnerMinTimer = invalid
+
+    ' If data already arrived, reveal now
+    if m.firstDataReady then
+        revealRowList()
+    end if
+end sub
+
+
+' ******************************************************
+' Reveal RowList and hide loading overlay (FG-021)
+' Gated: both spinnerMinTimeElapsed AND firstDataReady
+' must be true before this does anything.
+' ******************************************************
+sub revealRowList()
+    ' Both gates must be true
+    if not m.spinnerMinTimeElapsed then
+        print "[MainScene] FG-021: Data ready but spinner min time not yet elapsed"
+        return
+    end if
+    if not m.firstDataReady then
+        print "[MainScene] FG-021: Min time elapsed but no data yet"
+        return
+    end if
+    if m.firstRowRevealed then return
+    m.firstRowRevealed = true
+
+    print "[MainScene] FG-021: Revealing RowList, hiding loading overlay"
+
+    ' Hide loading overlay
+    hideGlobalLoading()
+
+    ' Show RowList
+    m.rowList.visible = true
+
+    ' Transfer focus
+    setRowListFocus()
+end sub
+
+
+' ******************************************************
+' Build RowList with placeholder rows immediately (FG-021)
+' ******************************************************
+sub buildPlaceholderRowList()
+    print "[MainScene] Building placeholder RowList..."
+
+    rootContent = CreateObject("roSGNode", "ContentNode")
+
+    for each category in m.viewModel.categories
+        rowNode       = CreateObject("roSGNode", "ContentNode")
+        rowNode.title = category.display_name
+
+        placeholder = CreateObject("roSGNode", "ContentNode")
+        placeholder.title = "Loading..."
+        placeholder.addField("isPlaceholder", "boolean", false)
+        placeholder.isPlaceholder = true
+
+        rowNode.appendChild(placeholder)
+        rootContent.appendChild(rowNode)
+    end for
+
+    m.rowList.content = rootContent
+    print "[MainScene] Placeholder RowList built with "; m.totalCategories; " rows"
+end sub
+
+
+' ******************************************************
+' Start sequential category loading
 ' ******************************************************
 sub startCategoryLoading()
-    print "[MainScene] ========================================="
     print "[MainScene] STARTING CATEGORY LOADING"
-    print "[MainScene] ========================================="
-    
-    ' Check if we have a load queue
+
     if m.viewModel.loadQueue = invalid or m.viewModel.loadQueue.Count() = 0 then
         print "[MainScene] ERROR: No categories to load"
         showGlobalError("No categories configured")
         return
     end if
-    
-    print "[MainScene] Categories to load: "; m.viewModel.loadQueue.Count()
-    
-    ' Load first category (triggers sequential loading)
+
     loadNextCategory()
 end sub
 
 
 ' ******************************************************
-' Load next category from queue using Task
+' Load next category from queue
 ' ******************************************************
 sub loadNextCategory()
-    ' Check if more categories to load
     if m.viewModel.loadQueue = invalid or m.viewModel.loadQueue.Count() = 0 then
-        print "[MainScene] All categories loaded!"
-        
-        ' Populate UI with loaded data
-        if m.loadedCategoryCount > 0 then
-            populateRowList()
-        else
+        print "[MainScene] All categories processed"
+
+        if m.loadedCategoryCount = 0 then
             showGlobalError("No categories could be loaded")
+        else
+            ' Force reveal if not already done
+            if not m.firstRowRevealed then
+                m.firstDataReady = true
+                revealRowList()
+            end if
         end if
-        
         return
     end if
-    
-    ' Get next category index
+
     categoryIndex = m.viewModel.loadQueue.Shift()
-    
     print "[MainScene] Loading category index: "; categoryIndex
-    
-    ' Create task for this category
+
     task = m.viewModel.categoryLoader.loadCategoryWithTask(m.viewModel, categoryIndex, m.top)
-    
+
     if task = invalid then
         print "[MainScene] ERROR: Failed to create task for category "; categoryIndex
-        
-        ' Try next category
         loadNextCategory()
         return
     end if
-    
-    ' Observe task completion
+
     task.observeField("result", "onCategoryLoaded")
-    
-    ' Store task reference
     m.activeTasks.Push(task)
-    
-    ' Start task
     task.control = "RUN"
-    
-    print "[MainScene] Task started for category "; categoryIndex
 end sub
 
 
 ' ******************************************************
-' Handle category data loaded from Task
+' Category Task completed (FG-021)
 ' ******************************************************
 sub onCategoryLoaded(event as Object)
-    print "[MainScene] ========================================="
-    print "[MainScene] CATEGORY LOADED CALLBACK"
-    print "[MainScene] ========================================="
-    
-    ' Get task and result
-    task = event.getRoSGNode()
-    result = task.result
+    task          = event.getRoSGNode()
+    result        = task.result
     categoryIndex = task.categoryIndex
-    
-    print "[MainScene] Category index: "; categoryIndex
-    print "[MainScene] Result success: "; result.success
-    
-    ' Parse the API response
+
+    print "[MainScene] Category loaded - index: "; categoryIndex; " success: "; result.success
+
     m.viewModel.categoryLoader.parseApiResponse(m.viewModel, categoryIndex, result)
-    
-    ' Update counter
+
     if result.success then
         m.loadedCategoryCount = m.loadedCategoryCount + 1
-        print "[MainScene] Successfully loaded "; m.loadedCategoryCount; " categories so far"
+
+        ' Update progress label
+        updateLoadingProgress(m.loadedCategoryCount, m.totalCategories)
+
+        ' Replace placeholder row with real images
+        refreshRowAtIndex(categoryIndex)
+
+        ' Mark first data ready and attempt reveal
+        if not m.firstDataReady then
+            m.firstDataReady = true
+            print "[MainScene] FG-021: First data ready"
+        end if
+        revealRowList()
     else
-        print "[MainScene] Failed to load category "; categoryIndex; ": "; result.error
+        print "[MainScene] Failed: "; categoryIndex; " - "; result.error
+        clearPlaceholderRow(categoryIndex)
     end if
-    
+
     ' Clean up task
     task.unobserveField("result")
-    
-    ' Remove from active tasks
     for i = 0 to m.activeTasks.Count() - 1
         if m.activeTasks[i].id = task.id then
             m.activeTasks.Delete(i)
             exit for
         end if
     end for
-    
-    ' Remove task from scene graph
     m.top.removeChild(task)
-    
-    ' Load next category
+
     loadNextCategory()
 end sub
 
 
 ' ******************************************************
-' Configure RowList appearance and behavior
+' Replace placeholder row with real image items (FG-021)
 ' ******************************************************
-sub configureRowList()
-    print "[MainScene] Configuring RowList..."
-    
-    ' === CRITICAL: Set RowList dimensions using clippingRect ===
-    m.rowList.clippingRect = [0, 0, 1860, 900]
-    print "[MainScene] clippingRect set to: "; m.rowList.clippingRect
-    
-    ' Verify bounding rect after setting clippingRect
-    boundingRect = m.rowList.boundingRect()
-    print "[MainScene] boundingRect after clipping: "; boundingRect
-    
-    m.rowList.rowHeights = [290]
-    print "[MainScene]   rowHeights = [290]"
-    
-    ' Focus configuration
-    m.rowList.drawFocusFeedback = true
-    m.rowList.drawFocusFeedbackOnTop = true
-    m.rowList.focusFootprintBlendColor = "0xFFFFFFFF"
-    m.rowList.focusBitmapBlendColor = "0xFFFFFFFF"
-    print "[MainScene]   Focus configured"
-    
-    ' Row label color
-    m.rowList.rowLabelColor = "0xCCCCCCCC"
-    
-    print "[MainScene] RowList configuration complete"
-end sub
+sub refreshRowAtIndex(categoryIndex as Integer)
+    if m.rowList.content = invalid then return
 
+    category = m.viewModel.categories[categoryIndex]
+    if category = invalid then return
 
-' ******************************************************
-' Populate RowList with category data
-' ******************************************************
-sub populateRowList()
-    print "========================================="
-    print "[MainScene] POPULATE START"
-    print "========================================="
-
-    categories = m.viewModel.categories
-
-    ' Handle error state
-    if m.viewModel.hasError then
-        showGlobalError(m.viewModel.errorMessage)
+    images = category.images
+    if images = invalid or images.Count() = 0 then
+        clearPlaceholderRow(categoryIndex)
         return
     end if
 
-    ' Validate categories
-    if categories = invalid or categories.count() = 0 then
-        print "[MainScene] ERROR: No categories available"
-        showGlobalError("No categories available")
-        return
-    end if
+    rowNode = m.rowList.content.getChild(categoryIndex)
+    if rowNode = invalid then return
 
-    ' Hide loading, show content
-    m.loadingLabel.visible = false
-    m.globalError.visible = false
+    ' Remove placeholder
+    rowNode.removeChildrenIndex(rowNode.getChildCount(), 0)
 
-    ' Create ContentNode hierarchy
-    print "[MainScene] Building ContentNode tree..."
-    rootContent = CreateObject("roSGNode", "ContentNode")
+    ' Add real items
+    addedCount = 0
+    for each image in images
+        if image.url_thumbnail <> invalid and image.url_thumbnail <> "" then
+            itemNode             = CreateObject("roSGNode", "ContentNode")
+            itemNode.HDPosterUrl = image.url_thumbnail
+            itemNode.SDPosterUrl = image.url_thumbnail
+            itemNode.title       = image.title
 
-    totalItems = 0
-    rowIndex = 0
-
-    for each category in categories
-        print "[MainScene] ----------------------------------------"
-        print "[MainScene] Row "; rowIndex; ": "; category.name
-        
-        ' Get images for this category
-        images = category.images
-        
-        if images = invalid then
-            print "[MainScene]   ERROR: images is invalid"
-            rowIndex = rowIndex + 1
-            continue for
-        end if
-        
-        if images.count() = 0 then
-            print "[MainScene]   WARNING: No images in category"
-            rowIndex = rowIndex + 1
-            continue for
-        end if
-        
-        print "[MainScene]   Images in category: "; images.count()
-        
-        ' Create row node
-        rowNode = CreateObject("roSGNode", "ContentNode")
-        rowNode.title = category.display_name  ' Use display_name for UI
-        
-        ' Add images to row
-        itemIndex = 0
-        for each image in images
-            ' Create item node
-            itemNode = CreateObject("roSGNode", "ContentNode")
-            
-            ' === Set poster URLs ===
-            if image.url_thumbnail <> invalid and image.url_thumbnail <> "" then
-                itemNode.HDPosterUrl = image.url_thumbnail
-                itemNode.SDPosterUrl = image.url_thumbnail
-            else
-                ' Skip items with no URL
-                continue for
-            end if
-            
-            ' Set title
-            if image.title <> invalid then
-                itemNode.title = image.title
-            else
-                itemNode.title = "Untitled"
-            end if
-            
-            ' Store full image data for detail screen
             itemNode.addField("imageData", "assocarray", false)
             itemNode.imageData = image
-            
-            ' Add to row
+
             rowNode.appendChild(itemNode)
-            itemIndex = itemIndex + 1
-            totalItems = totalItems + 1
-        end for
-        
-        print "[MainScene]   Added "; itemIndex; " items to row"
-        
-        ' Only add row if it has items
-        if rowNode.getChildCount() > 0 then
-            rootContent.appendChild(rowNode)
-            rowIndex = rowIndex + 1
+            addedCount = addedCount + 1
         end if
     end for
 
-    print "[MainScene] ----------------------------------------"
-    print "[MainScene] ContentNode tree complete"
-    print "[MainScene]   Total rows: "; rootContent.getChildCount()
-    print "[MainScene]   Total items: "; totalItems
-
-    ' === SET CONTENT ON ROWLIST ===
-    print "[MainScene] Setting content on RowList..."
-    m.rowList.content = rootContent
-
-    if m.rowList.content = invalid then
-        print "[MainScene] ERROR: Failed to set content on RowList!"
-        return
-    end if
-
-    print "[MainScene] Content set successfully"
-    
-    ' Show the RowList
-    m.rowList.visible = true
-    print "[MainScene] RowList made visible"
-
-    ' === SET FOCUS - Scene already has focus from init() ===
-    print "[MainScene] Transferring focus to RowList..."
-    
-    ' Jump to first item BEFORE setting focus
-    m.rowList.jumpToRowItem = [0, 0]
-    print "[MainScene] Jumped to [0, 0]"
-    
-    ' Small delay to ensure RowList is fully rendered
-    ' This is critical for focus to work properly
-    timer = CreateObject("roSGNode", "Timer")
-    timer.duration = 0.1
-    timer.repeat = false
-    timer.observeField("fire", "onFocusTimer")
-    m.focusTimer = timer
-    timer.control = "start"
-
-    print "========================================="
-    print "[MainScene] POPULATE COMPLETE"
-    print "========================================="
+    print "[MainScene] FG-021: Row "; categoryIndex; " ("; category.display_name; ") updated with "; addedCount; " items"
 end sub
 
 
 ' ******************************************************
-' Focus timer callback - sets focus after RowList renders
+' Clear a failed row's placeholder
 ' ******************************************************
+sub clearPlaceholderRow(categoryIndex as Integer)
+    if m.rowList.content = invalid then return
+    rowNode = m.rowList.content.getChild(categoryIndex)
+    if rowNode = invalid then return
+    rowNode.removeChildrenIndex(rowNode.getChildCount(), 0)
+end sub
+
+
+' ******************************************************
+' Configure RowList
+' ******************************************************
+sub configureRowList()
+    m.rowList.clippingRect             = [0, 0, 1860, 900]
+    m.rowList.rowHeights               = [290]
+    m.rowList.drawFocusFeedback        = true
+    m.rowList.drawFocusFeedbackOnTop   = true
+    m.rowList.focusFootprintBlendColor = "0xFFFFFFFF"
+    m.rowList.focusBitmapBlendColor    = "0xFFFFFFFF"
+    m.rowList.rowLabelColor            = "0xCCCCCCCC"
+end sub
+
+
+' ******************************************************
+' Set focus to RowList via short timer
+' ******************************************************
+sub setRowListFocus()
+    timer = CreateObject("roSGNode", "Timer")
+    timer.duration = 0.1
+    timer.repeat   = false
+    timer.observeField("fire", "onFocusTimer")
+    m.focusTimer = timer
+    timer.control = "start"
+end sub
+
 sub onFocusTimer()
-    print "[MainScene] Focus timer fired - setting RowList focus"
-    
-    ' Give focus to RowList
+    m.rowList.jumpToRowItem = [0, 0]
     m.rowList.setFocus(true)
-    
-    ' Verify focus
-    if m.rowList.hasFocus() then
-        print "[MainScene] SUCCESS: RowList has focus!"
-        print "[MainScene] Focus position: ["; m.rowList.rowItemFocused[0]; ", "; m.rowList.rowItemFocused[1]; "]"
-    else
-        print "[MainScene] WARNING: RowList does NOT have focus - retrying..."
-        ' Force scene focus first, then RowList
+
+    if not m.rowList.hasFocus() then
         m.top.setFocus(true)
         m.rowList.setFocus(true)
-        
-        if m.rowList.hasFocus() then
-            print "[MainScene] SUCCESS on retry!"
-        else
-            print "[MainScene] FAILED: Focus could not be set"
-        end if
     end if
-    
-    ' Clean up timer
+
     m.focusTimer = invalid
 end sub
 
 
 ' ******************************************************
-' Show global error
+' Show global error — hides spinner, shows error text
 ' ******************************************************
 sub showGlobalError(message as String)
     print "[MainScene] ERROR: "; message
-    m.loadingLabel.visible = false
-    m.rowList.visible = false
+    hideGlobalLoading()
+    m.rowList.visible     = false
     m.globalError.visible = true
-    m.globalError.text = message
+    m.globalError.text    = message
 end sub
 
 
 ' ******************************************************
-' Handle item selection
+' Item selected
 ' ******************************************************
 sub onItemSelected()
-    rowIndex = m.rowList.rowItemSelected[0]
+    rowIndex  = m.rowList.rowItemSelected[0]
     itemIndex = m.rowList.rowItemSelected[1]
-    
-    print "[MainScene] ========================================="
-    print "[MainScene] ITEM SELECTED"
-    print "[MainScene]   Row: "; rowIndex
-    print "[MainScene]   Item: "; itemIndex
-    print "[MainScene] ========================================="
 
-    ' Get selected item
+    print "[MainScene] ITEM SELECTED - Row: "; rowIndex; " Item: "; itemIndex
+
     selectedItem = m.rowList.content.getChild(rowIndex).getChild(itemIndex)
-    
-    if selectedItem <> invalid and selectedItem.imageData <> invalid then
-        imageModel = selectedItem.imageData
-        print "[MainScene]   Image: "; imageModel.title
-        
-        ' Notify ViewModel
-        m.viewModel.handleImageSelection(rowIndex, itemIndex)
-        
-        if m.viewModel.navigationRequested then
-            openDetailScreen(imageModel)
-            m.viewModel.navigationRequested = false
+
+    if selectedItem <> invalid then
+        isPlaceholder = false
+        if selectedItem.doesExist("isPlaceholder") then
+            isPlaceholder = selectedItem.isPlaceholder
         end if
-    else
-        print "[MainScene]   ERROR: Invalid selected item"
+
+        if not isPlaceholder and selectedItem.imageData <> invalid then
+            imageModel = selectedItem.imageData
+            m.viewModel.handleImageSelection(rowIndex, itemIndex)
+
+            if m.viewModel.navigationRequested then
+                openDetailScreen(imageModel)
+                m.viewModel.navigationRequested = false
+            end if
+        else
+            print "[MainScene] Ignoring placeholder item"
+        end if
     end if
 end sub
 
 
 ' ******************************************************
-' Handle focus changes
+' Item focused
 ' ******************************************************
 sub onItemFocused()
-    rowIndex = m.rowList.rowItemFocused[0]
+    rowIndex  = m.rowList.rowItemFocused[0]
     itemIndex = m.rowList.rowItemFocused[1]
-    
     print "[MainScene] Focus: ["; rowIndex; ", "; itemIndex; "]"
 end sub
 
@@ -443,51 +451,26 @@ end sub
 ' Open detail screen
 ' ******************************************************
 sub openDetailScreen(imageModel as Object)
-    print "[MainScene] ========================================="
-    print "[MainScene] OPENING DETAIL SCREEN"
-    print "[MainScene]   Title: "; imageModel.title
-    if imageModel.url_large <> invalid then
-        print "[MainScene]   URL: "; imageModel.url_large
-    end if
-    print "[MainScene] ========================================="
-    
-    ' Create DetailScene component
+    print "[MainScene] Opening detail: "; imageModel.title
+
     m.detailScene = CreateObject("roSGNode", "DetailScene")
-    
-    if m.detailScene = invalid then
-        print "[MainScene] ERROR: Failed to create DetailScene"
-        return
-    end if
-    
-    ' Set the image model
+    if m.detailScene = invalid then return
+
     m.detailScene.imageModel = imageModel
-    
-    ' Observe close event
     m.detailScene.observeField("closeRequested", "onDetailClosed")
-    
-    ' Add to scene
     m.top.appendChild(m.detailScene)
-    
-    print "[MainScene] DetailScene created and added to scene graph"
 end sub
 
 
 ' ******************************************************
-' Handle detail close
+' Detail closed
 ' ******************************************************
 sub onDetailClosed()
-    print "[MainScene] Detail screen closed, restoring focus"
-    
-    ' Remove detail scene from scene graph
     if m.detailScene <> invalid then
         m.top.removeChild(m.detailScene)
         m.detailScene = invalid
     end if
-    
-    ' Restore focus to RowList
     m.rowList.setFocus(true)
-    
-    print "[MainScene] Focus restored to RowList"
 end sub
 
 
@@ -502,38 +485,28 @@ end sub
 
 sub onTextColorChanged()
     if m.top.appTextColor <> "" then
-        if m.appTitle <> invalid then m.appTitle.color = m.top.appTextColor
-        if m.loadingLabel <> invalid then m.loadingLabel.color = m.top.appTextColor
+        if m.appTitle       <> invalid then m.appTitle.color       = m.top.appTextColor
+        if m.loadingProgress <> invalid then m.loadingProgress.color = m.top.appTextColor
     end if
 end sub
 
 
 ' ******************************************************
-' Key event handling - RowList handles navigation automatically
+' Key events
 ' ******************************************************
 function onKeyEvent(key as String, press as Boolean) as Boolean
     if not press then return false
 
-    print "[MainScene] Key: "; key
-
-    ' Back button
     if key = "back" then
-        ' If DetailScene is open, close it instead of exiting app
         if m.detailScene <> invalid then
-            print "[MainScene] DetailScene is open - closing it"
             onDetailClosed()
-            return true  ' Consume the event - don't exit app
+            return true
         else
-            print "[MainScene] Back pressed - exiting app"
-            return false  ' Return false to allow system to handle (exits app)
+            return false
         end if
-    
-    ' Options button (for future settings/menu)
     else if key = "options" then
-        print "[MainScene] Options pressed"
-        return true  ' Consume the event
+        return true
     end if
 
-    ' Let RowList handle all directional navigation
     return false
 end function

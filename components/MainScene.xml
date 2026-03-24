@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- ******************************************************
-  ** MainScene.xml (RowList - CORRECTED)
-  ** CRITICAL FIXES:
-  ** 1. itemSize changed to [280, 210] for proper horizontal layout
-  ** 2. rowLabelOffset changed to [[0, 20]] (array of arrays)
-  ** 3. Added rowItemSize for consistency
-  ** 4. UPDATED: Added FlickrService imports for real API integration
+  ** MainScene.xml
+  ** UPDATED: FG-021 - Loading States Implementation
+  **
+  ** SPINNER NOTE: BusySpinner requires a poster/skin asset
+  ** which is not guaranteed on all Roku firmware. Instead
+  ** we use a Poster + RotationAnimation which works reliably
+  ** on every device. The spinner image uses Roku's built-in
+  ** system overhang spinner: "pkg:/images/spinner.png"
+  ** If that asset is unavailable, a Rectangle pulse works
+  ** as fallback. See BRS for control logic.
   ****************************************************** -->
 
 <component name="MainScene" extends="Scene">
     <interface>
-        <field id="appBgColor" type="string" />
+        <field id="appBgColor"   type="string" />
         <field id="appTextColor" type="string" />
     </interface>
 
@@ -26,22 +30,139 @@
             color="0xFFFFFF"
         />
 
-        <!-- Loading Label -->
-        <Label
-            id="loadingLabel"
-            text="Loading categories..."
-            translation="[960, 540]"
-            horizAlign="center"
-            vertAlign="center"
-            font="font:MediumSystemFont"
-            color="0xCCCCCC"
+        <!-- ============================================
+             GLOBAL LOADING STATE (FG-021)
+             All nodes hidden via hideGlobalLoading() in BRS
+             once content is ready.
+             ============================================ -->
+
+        <!-- Dark backdrop covering full screen -->
+        <Rectangle
+            id="loadingBackdrop"
+            translation="[0, 0]"
+            width="1920"
+            height="1080"
+            color="0x111111FF"
             visible="true"
         />
 
-        <!-- Global Error Label -->
+        <!-- Spinner: pure XML dots — no image asset needed.
+             12 Rectangle dots in a circle, fading from bright to dim.
+             Group centered on screen. FloatFieldInterpolator rotates
+             the group 0 to 2*PI (one full turn) per second. -->
+        <Group
+            id="spinnerGroup"
+            translation="[960, 540]"
+            visible="true"
+        >
+            <Rectangle
+                translation="[-4.0, -34.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFFFF"
+            />
+            <Rectangle
+                translation="[11.0, -30.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFFE9"
+            />
+            <Rectangle
+                translation="[22.0, -19.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFFD4"
+            />
+            <Rectangle
+                translation="[26.0, -4.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFFBF"
+            />
+            <Rectangle
+                translation="[22.0, 11.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFFAA"
+            />
+            <Rectangle
+                translation="[11.0, 22.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFF94"
+            />
+            <Rectangle
+                translation="[-4.0, 26.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFF7F"
+            />
+            <Rectangle
+                translation="[-19.0, 22.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFF6A"
+            />
+            <Rectangle
+                translation="[-30.0, 11.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFF55"
+            />
+            <Rectangle
+                translation="[-34.0, -4.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFF3F"
+            />
+            <Rectangle
+                translation="[-30.0, -19.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFF2A"
+            />
+            <Rectangle
+                translation="[-19.0, -30.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFF15"
+            />
+        </Group>
+
+        <Animation
+            id="spinnerAnim"
+            duration="1.0"
+            easeFunction="linear"
+            repeat="true"
+        >
+            <FloatFieldInterpolator
+                id="spinnerRotInterp"
+                key="[0.0, 1.0]"
+                keyValue="[0.0, 6.283185]"
+                fieldToInterp="spinnerGroup.rotation"
+            />
+        </Animation>
+
+        <!-- Loading text below spinner -->
+        <Label
+            id="loadingProgress"
+            text="Loading..."
+            translation="[0, 600]"
+            width="1920"
+            height="50"
+            horizAlign="center"
+            vertAlign="center"
+            font="font:MediumSystemFont"
+            color="0xCCCCCCFF"
+            visible="true"
+        />
+
+        <!-- ============================================
+             GLOBAL ERROR STATE
+             ============================================ -->
         <Label
             id="globalError"
-            translation="[960, 540]"
+            translation="[60, 540]"
             width="1800"
             height="60"
             horizAlign="center"
@@ -51,7 +172,10 @@
             visible="false"
         />
 
-        <!-- RowList - Netflix-style Swimlane -->
+        <!-- ============================================
+             CONTENT: RowList
+             Starts hidden, shown once first row loads
+             ============================================ -->
         <RowList
             id="categoryRowList"
             translation="[10, 100]"
@@ -69,9 +193,8 @@
             rowFocusAnimationStyle="floatingFocus"
             vertFocusAnimationStyle="floatingFocus"
         />
-    </children>
 
-    <!-- Load order: dependencies before dependents -->
+    </children>
 
     <!-- Validators -->
     <script type="text/brightscript" uri="pkg:/source/Validators/ImageValidators.brs" />
@@ -107,7 +230,7 @@
     <script type="text/brightscript" uri="pkg:/source/config/NetworkConfig.brs" />
     <script type="text/brightscript" uri="pkg:/source/config/UIConfig.brs" />
 
-    <!-- Services (NEW - Required for FlickrService) -->
+    <!-- Services -->
     <script type="text/brightscript" uri="pkg:/source/services/FlickrService_ResponseParser.brs" />
     <script type="text/brightscript" uri="pkg:/source/services/FlickrService_ApiMethods.brs" />
     <script type="text/brightscript" uri="pkg:/source/services/FlickrService.brs" />
@@ -119,6 +242,5 @@
 
     <!-- Scene logic -->
     <script type="text/brightscript" uri="pkg:/components/MainScene.brs" />
-    <!-- Add this at the bottom of your script imports -->
     <script type="text/brightscript" uri="pkg:/source/tests/TestMainViewModel_CategoryLoading.brs" />
 </component>
