@@ -3,29 +3,33 @@
 ' Horizontal scrolling row of ImageCard components.
 ' Driven entirely by a CategoryModel assocarray.
 ' Ticket: FG-014
+' TRULY FINAL: Manual left/right handling + proper scroll
 ' ******************************************************
-
-' ---- Layout constants (mirrors UIConfig.SWIMLANE) ----
-
-' space reserved above the card container
 
 sub init()
     print "[SwimLane] Initializing..."
-    CARD_WIDTH      = 400
-    CARD_HEIGHT     = 300
-    TITLE_HEIGHT    = 50    
-    LABEL_HEIGHT    = 40
+
+    ' Layout constants
+    m.CARD_WIDTH   = 400
+    m.CARD_HEIGHT  = 300
+    m.TITLE_HEIGHT = 50
+    m.LABEL_HEIGHT = 40
+
+    ' Screen/viewport dimensions
+    m.SCREEN_WIDTH = 1920
+    m.VIEWPORT_WIDTH = 1800  ' Visible card area width
 
     ' Node references
-    m.categoryTitle   = m.top.findNode("categoryTitle")
-    m.cardContainer   = m.top.findNode("cardContainer")
-    m.loadingIndicator = m.top.findNode("loadingIndicator")
-    m.emptyMessage    = m.top.findNode("emptyMessage")
-    m.errorMessage    = m.top.findNode("errorMessage")
+    m.categoryTitle     = m.top.findNode("categoryTitle")
+    m.cardClipContainer = m.top.findNode("cardClipContainer")
+    m.cardContainer     = m.top.findNode("cardContainer")
+    m.loadingIndicator  = m.top.findNode("loadingIndicator")
+    m.emptyMessage      = m.top.findNode("emptyMessage")
+    m.errorMessage      = m.top.findNode("errorMessage")
 
     ' Internal state
-    m.cards           = []      ' holds references to created ImageCard nodes
-    m.focusedIndex    = 0
+    m.cards        = []
+    m.focusedIndex = 0
 
     ' Observers
     m.top.observeField("categoryModel", "onCategoryModelChanged")
@@ -48,22 +52,21 @@ sub onCategoryModelChanged()
 
     print "[SwimLane] Category model received: "; category.name
 
-    ' Update title
-    m.categoryTitle.text = category.name
+    ' Use display_name for the visible title, fall back to name
+    titleText = category.display_name
+    if titleText = invalid or titleText = "" then titleText = category.name
+    m.categoryTitle.text = titleText
 
-    ' Reflect loading state
     if category.isLoading then
         showLoading()
         return
     end if
 
-    ' Reflect error state
     if category.hasError then
         showError(category.errorMessage)
         return
     end if
 
-    ' Render images
     if category.images = invalid or category.images.count() = 0 then
         showEmpty()
     else
@@ -72,64 +75,52 @@ sub onCategoryModelChanged()
 end sub
 
 
-' ******************************************************
-' Called when cardSpacing changes - rebuild layout
-' ******************************************************
 sub onCardSpacingChanged()
-    spacing = m.top.cardSpacing
-    m.cardContainer.itemSpacings = [spacing]
+    m.cardContainer.itemSpacings = [m.top.cardSpacing]
 end sub
 
 
 ' ******************************************************
-' Build ImageCard nodes for each image in the array
+' Build ImageCard nodes for each image
 ' ******************************************************
 sub renderCards(images as Object)
     print "[SwimLane] Rendering "; images.count(); " cards"
 
-    ' Hide status nodes
     m.loadingIndicator.visible = false
     m.emptyMessage.visible     = false
     m.errorMessage.visible     = false
 
-    ' Remove existing cards
     m.cardContainer.removeChildrenIndex(m.cardContainer.getChildCount(), 0)
     m.cards = []
 
-    ' Apply spacing from field
     m.cardContainer.itemSpacings = [m.top.cardSpacing]
 
-    ' Create one ImageCard per image
     for each imageModel in images
         card = m.cardContainer.createChild("ImageCard")
         if card <> invalid then
-            card.cardWidth   = m.CARD_WIDTH
-            card.cardHeight  = m.CARD_HEIGHT
-            card.showTitle   = true
-            card.imageModel  = imageModel
-
-            ' Observe selection from each card
+            card.cardWidth  = m.CARD_WIDTH
+            card.cardHeight = m.CARD_HEIGHT
+            card.showTitle  = true
+            card.imageModel = imageModel
             card.observeField("itemSelected", "onCardSelected")
-
             m.cards.push(card)
         else
             print "[SwimLane] WARNING: Failed to create ImageCard"
         end if
     end for
 
-    ' Focus first card if we have any
     if m.cards.count() > 0 then
-        m.focusedIndex        = 0
+        m.focusedIndex         = 0
         m.top.focusedCardIndex = 0
+        
+        ' Reset scroll position to show first cards
+        m.cardContainer.translation = [0, 0]
     end if
 
     print "[SwimLane] Rendered "; m.cards.count(); " cards"
 end sub
 
 
-' ******************************************************
-' Show loading state
-' ******************************************************
 sub showLoading()
     print "[SwimLane] Showing loading state"
     m.loadingIndicator.visible = true
@@ -140,9 +131,6 @@ sub showLoading()
 end sub
 
 
-' ******************************************************
-' Show empty state
-' ******************************************************
 sub showEmpty()
     print "[SwimLane] No images to display"
     m.loadingIndicator.visible = false
@@ -153,9 +141,6 @@ sub showEmpty()
 end sub
 
 
-' ******************************************************
-' Show error state
-' ******************************************************
 sub showError(message as String)
     print "[SwimLane] Error: "; message
     m.loadingIndicator.visible = false
@@ -167,12 +152,7 @@ sub showError(message as String)
 end sub
 
 
-' ******************************************************
-' Called when a card fires itemSelected
-' Bubble up to parent (MainScene / ViewModel)
-' ******************************************************
 sub onCardSelected()
-    ' Find which card fired by checking all cards
     for each card in m.cards
         if card.itemSelected <> invalid then
             print "[SwimLane] Card selected: "; card.itemSelected.id
@@ -184,30 +164,109 @@ end sub
 
 
 ' ******************************************************
-' Focus management — called by parent when this
-' swimlane receives focus
+' Set focus to a specific card (called from MainScene)
 ' ******************************************************
 sub setFocusToCard(index as Integer)
-    if m.cards.count() = 0 then return
-
-    ' Clamp index
+    if m.cards.count() = 0 then 
+        print "[SwimLane] setFocusToCard: no cards exist"
+        return
+    end if
+    
     if index < 0 then index = 0
     if index >= m.cards.count() then index = m.cards.count() - 1
 
+    print "[SwimLane] setFocusToCard called with index "; index
+
+    ' Remove focus from previously focused card
+    if m.focusedIndex >= 0 and m.focusedIndex < m.cards.count() then
+        if m.focusedIndex <> index then
+            m.cards[m.focusedIndex].setFocus(false)
+            print "[SwimLane] Removed focus from card "; m.focusedIndex
+        end if
+    end if
+
+    ' Update internal tracking
     m.focusedIndex         = index
     m.top.focusedCardIndex = index
+    
+    ' Set focus to the new card
     m.cards[index].setFocus(true)
-
-    print "[SwimLane] Focus set to card "; index
+    print "[SwimLane] Set focus to card "; index
+    
+    ' Scroll to make this card visible
+    scrollToCard(index)
 end sub
 
 
 ' ******************************************************
-' Handle remote key events
+' Scroll the card container to keep the focused card visible
+' ******************************************************
+sub scrollToCard(cardIndex as Integer)
+    if cardIndex < 0 or cardIndex >= m.cards.count() then 
+        print "[SwimLane] scrollToCard: invalid index "; cardIndex
+        return
+    end if
+
+    ' Calculate the X position of the focused card
+    spacing = m.top.cardSpacing
+    cardPositionX = (m.CARD_WIDTH + spacing) * cardIndex
+    
+    ' Get current container translation
+    currentTranslation = m.cardContainer.translation
+    currentX = currentTranslation[0]
+    
+    ' Calculate where this card appears on screen
+    cardScreenX = cardPositionX + currentX
+    
+    ' Define safe viewing zone
+    leftMargin = 50
+    rightMargin = 150
+    
+    safeLeft = leftMargin
+    safeRight = m.VIEWPORT_WIDTH - m.CARD_WIDTH - rightMargin
+    
+    ' Determine target scroll position
+    targetX = currentX
+    
+    ' Card is too far right - scroll container left (negative X)
+    if cardScreenX > safeRight then
+        targetX = safeRight - cardPositionX
+        print "[SwimLane] Card "; cardIndex; " too far right, scrolling to "; targetX
+    end if
+    
+    ' Card is too far left - scroll container right (positive X)
+    if cardScreenX < safeLeft then
+        targetX = safeLeft - cardPositionX
+        print "[SwimLane] Card "; cardIndex; " too far left, scrolling to "; targetX
+    end if
+    
+    ' Don't scroll past the beginning (first card visible)
+    if targetX > 0 then
+        targetX = 0
+    end if
+    
+    ' Don't scroll past the end (last card visible)
+    totalWidth = (m.CARD_WIDTH + spacing) * m.cards.count()
+    minX = m.VIEWPORT_WIDTH - totalWidth
+    if minX > 0 then minX = 0  ' Content narrower than viewport
+    if targetX < minX then
+        targetX = minX
+    end if
+    
+    ' Apply the scroll
+    if targetX <> currentX then
+        print "[SwimLane] Scrolling from "; currentX; " to "; targetX
+        m.cardContainer.translation = [targetX, 0]
+    else
+        print "[SwimLane] Card "; cardIndex; " already visible, no scroll needed"
+    end if
+end sub
+
+
+' ******************************************************
+' Handle remote control key events
 ' ******************************************************
 function onKeyEvent(key as String, press as Boolean) as Boolean
-    handled = false
-
     if not press then return false
     if m.cards.count() = 0 then return false
 
@@ -216,33 +275,34 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
     if key = "right" then
         newIndex = m.focusedIndex + 1
         if newIndex < m.cards.count() then
+            print "[SwimLane] Moving right from "; m.focusedIndex; " to "; newIndex
             setFocusToCard(newIndex)
-            handled = true
+        else
+            print "[SwimLane] At right boundary, staying at "; m.focusedIndex
         end if
-        ' If at last card, let parent handle (move to next swimlane)
+        return true
 
     else if key = "left" then
         newIndex = m.focusedIndex - 1
         if newIndex >= 0 then
+            print "[SwimLane] Moving left from "; m.focusedIndex; " to "; newIndex
             setFocusToCard(newIndex)
-            handled = true
+        else
+            print "[SwimLane] At left boundary, staying at "; m.focusedIndex
         end if
-        ' If at first card, let parent handle (move to previous swimlane)
+        return true
 
     else if key = "OK" then
-        ' Trigger selection on the focused card
-        if m.focusedIndex < m.cards.count() then
+        if m.focusedIndex >= 0 and m.focusedIndex < m.cards.count() then
             focusedCard = m.cards[m.focusedIndex]
-            if focusedCard.imageModel <> invalid then
-                print "[SwimLane] OK on card "; m.focusedIndex
+            if focusedCard <> invalid and focusedCard.imageModel <> invalid then
+                print "[SwimLane] OK pressed on card "; m.focusedIndex
                 m.top.itemSelected = focusedCard.imageModel
-                handled = true
+                return true
             end if
         end if
     end if
 
-    ' Up / Down are intentionally NOT handled here —
-    ' the parent (MainScene) manages vertical swimlane navigation
-
-    return handled
+    ' Return false for up/down so MainScene can handle lane switching
+    return false
 end function

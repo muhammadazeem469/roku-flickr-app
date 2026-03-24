@@ -7,6 +7,9 @@
 sub init()
     print "[ImageCard] Initializing..."
 
+    ' Generate unique ID for this card instance (needed for animations)
+    m.top.id = "imageCard_" + Rnd(999999).ToStr()
+
     ' Get references to child nodes
     m.cardBackground = m.top.findNode("cardBackground")
     m.placeholder    = m.top.findNode("placeholder")
@@ -166,6 +169,7 @@ end sub
 sub applyFocusedState()
     m.focusBorder.opacity = 1.0
 
+    ' Animate scale using node ID
     scaleAnimation = m.top.createChild("Animation")
     scaleAnimation.duration     = 0.2   ' UIConfig.ANIMATION.FAST
     scaleAnimation.easeFunction = "outCubic"
@@ -191,6 +195,7 @@ end sub
 sub applyUnfocusedState()
     m.focusBorder.opacity = 0.0
 
+    ' Animate scale using node ID
     scaleAnimation = m.top.createChild("Animation")
     scaleAnimation.duration     = 0.2   ' UIConfig.ANIMATION.FAST
     scaleAnimation.easeFunction = "inCubic"

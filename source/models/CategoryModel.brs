@@ -1,51 +1,56 @@
 ' ******************************************************
 ' CategoryModel.brs
 ' Pure data model for a Flickr photo category/swimlane
-' Includes inline state setter methods
 ' ******************************************************
 
-' Constructor - Creates a new CategoryModel instance
-' @param id - Unique category identifier
-' @param name - Display name (e.g., "Nature", "Architecture")
-' @param tags - Comma-separated search tags
-' @param method - Flickr API method to use
-' @return CategoryModel object
-function CreateCategoryModel(id as String, name as String, tags as String, method as String) as Object
+' Constructor
+' FIX 2: Added display_name as a proper field on the model.
+'         Previously the constructor signature was:
+'           CreateCategoryModel(id, name, tags, method)
+'         but MainViewModel called it as:
+'           CreateCategoryModel(config.name, config.display_name, config.tags, config.method)
+'         — passing display_name as the "name" arg and never storing it on
+'         the model at all. SwimLane then had no display_name to show.
+'
+'         New signature matches how MainViewModel already calls it:
+'           CreateCategoryModel(name, display_name, tags, method)
+'         and stores both fields explicitly on the model.
+function CreateCategoryModel(name as String, display_name as String, tags as String, method as String) as Object
     model = {
         ' Core properties
-        id: id
-        name: name
-        tags: tags
-        method: method
-        
+        id:           name           ' use name as the unique key
+        name:         name           ' internal identifier
+        display_name: display_name   ' FIX: human-readable label for UI
+        tags:         tags
+        method:       method
+
         ' Image collection
         images: []
-        
+
         ' State management
-        isLoading: false
-        hasError: false
+        isLoading:    false
+        hasError:     false
         errorMessage: ""
-        
+
         ' Pagination
-        page: 1
-        totalPages: 0
+        page:         1
+        totalPages:   0
         hasMorePages: false
-        
+
         ' Metadata
-        totalImages: 0
-        lastUpdated: ""
-        
+        totalImages:  0
+        lastUpdated:  ""
+
         ' Inline state setters
-        setLoading: CategoryModel_setLoading
-        setError: CategoryModel_setError
-        clearError: CategoryModel_clearError
+        setLoading:  CategoryModel_setLoading
+        setError:    CategoryModel_setError
+        clearError:  CategoryModel_clearError
     }
-    
+
     return model
 end function
 
 
-' Set loading state
 function CategoryModel_setLoading(state as Boolean) as Object
     m.isLoading = state
     if state then
@@ -55,19 +60,17 @@ function CategoryModel_setLoading(state as Boolean) as Object
 end function
 
 
-' Set error state with message
 function CategoryModel_setError(message as String) as Object
-    m.hasError = true
+    m.hasError    = true
     m.errorMessage = message
-    m.isLoading = false
+    m.isLoading   = false
     print "[CategoryModel] Error in "; m.name; ": "; message
     return m
 end function
 
 
-' Clear error state
 function CategoryModel_clearError() as Object
-    m.hasError = false
+    m.hasError    = false
     m.errorMessage = ""
     return m
 end function
