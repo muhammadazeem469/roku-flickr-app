@@ -1,230 +1,388 @@
 ' ******************************************************
-' MainScene.brs
-' Root scene for Flickr Gallery.
-' Integrates MainViewModel with 12 SwimLane components.
-' Ticket: FG-015
+' MainScene.brs (RowList - FINAL FIX)
+' CRITICAL FIX: Fixed focus sequence to prevent invalid focus state
 ' ******************************************************
 
 sub init()
-    print "[MainScene] Initializing..."
+    print "========================================="
+    print "[MainScene] INIT START"
+    print "========================================="
 
-    ' Layout constants
-    m.SWIMLANE_COUNT = 12
+    ' Get UI references
+    m.appTitle      = m.top.findNode("appTitle")
+    m.loadingLabel  = m.top.findNode("loadingLabel")
+    m.globalError   = m.top.findNode("globalError")
+    m.rowList       = m.top.findNode("categoryRowList")
 
-    ' --- Node references ---
-    m.appTitle           = m.top.findNode("appTitle")
-    m.loadingLabel       = m.top.findNode("loadingLabel")
-    m.globalError        = m.top.findNode("globalError")
-    m.swimlanesScroller  = m.top.findNode("swimlanesScroller")
-    m.swimlanesContainer = m.top.findNode("swimlanesContainer")
+    if m.rowList = invalid then
+        print "[MainScene] ERROR: RowList not found!"
+        return
+    end if
 
-    ' Collect all 12 swimlane node references into an array
-    m.swimlanes = []
-    for i = 0 to m.SWIMLANE_COUNT - 1
-        lane = m.top.findNode("swimlane_" + i.toStr())
-        m.swimlanes.push(lane)
-        ' Observe itemSelected from each swimlane
-        lane.observeField("itemSelected", "onImageSelected")
-    end for
+    print "[MainScene] RowList found successfully"
 
-    ' --- Focus state ---
-    m.focusedLaneIndex = 0
+    ' === CRITICAL: Set focus on Scene FIRST ===
+    print "[MainScene] Setting Scene focus FIRST..."
+    m.top.setFocus(true)
 
-    ' --- Configuration fields from main.brs ---
-    m.top.observeField("appBgColor",   "onBackgroundColorChanged")
+    ' Configure RowList BEFORE setting content
+    configureRowList()
+
+    ' Observe RowList events
+    m.rowList.observeField("itemSelected", "onItemSelected")
+    m.rowList.observeField("itemFocused", "onItemFocused")
+
+    ' Observe theme changes
+    m.top.observeField("appBgColor", "onBackgroundColorChanged")
     m.top.observeField("appTextColor", "onTextColorChanged")
 
-    ' --- Initialize ViewModel ---
+    ' Initialize ViewModel
+    print "[MainScene] Creating ViewModel..."
     m.viewModel = CreateMainViewModel()
     m.viewModel.init()
-
-    ' Load all category data
     m.viewModel.loadAllCategories()
+    print "[MainScene] ViewModel initialized"
 
-    ' Push data to swimlanes
-    refreshSwimlanes()
+    ' Populate RowList with data
+    populateRowList()
 
-    ' Set initial focus
-    m.top.setFocus(true)
-    setFocusToLane(0)
-
-    print "[MainScene] Initialization complete"
+    print "========================================="
+    print "[MainScene] INIT COMPLETE"
+    print "========================================="
 end sub
 
 
 ' ******************************************************
-' Push current ViewModel category data to all swimlanes
+' Configure RowList appearance and behavior
 ' ******************************************************
-sub refreshSwimlanes()
+sub configureRowList()
+    print "[MainScene] Configuring RowList..."
+    
+    ' === CRITICAL: Set RowList dimensions using clippingRect ===
+    m.rowList.clippingRect = [0, 0, 1860, 900]
+    print "[MainScene] clippingRect set to: "; m.rowList.clippingRect
+    
+    ' Verify bounding rect after setting clippingRect
+    boundingRect = m.rowList.boundingRect()
+    print "[MainScene] boundingRect after clipping: "; boundingRect
+    
+    m.rowList.rowHeights = [290]
+    print "[MainScene]   rowHeights = [290]"
+    
+    ' Focus configuration
+    m.rowList.drawFocusFeedback = true
+    m.rowList.drawFocusFeedbackOnTop = true
+    m.rowList.focusFootprintBlendColor = "0xFFFFFFFF"
+    m.rowList.focusBitmapBlendColor = "0xFFFFFFFF"
+    print "[MainScene]   Focus configured"
+    
+    ' Row label color
+    m.rowList.rowLabelColor = "0xCCCCCCCC"
+    
+    print "[MainScene] RowList configuration complete"
+end sub
+
+
+' ******************************************************
+' Populate RowList with category data
+' ******************************************************
+sub populateRowList()
+    print "========================================="
+    print "[MainScene] POPULATE START"
+    print "========================================="
+
     categories = m.viewModel.categories
 
-    ' Handle global error
+    ' Handle error state
     if m.viewModel.hasError then
         showGlobalError(m.viewModel.errorMessage)
         return
     end if
 
-    ' Handle still initializing
+    ' Handle loading state
     if m.viewModel.isInitializing then
-        m.loadingLabel.visible      = true
-        m.swimlanesScroller.visible = false
+        print "[MainScene] Still initializing, showing loading..."
+        m.loadingLabel.visible = true
+        m.rowList.visible = false
         return
     end if
 
-    ' Show swimlanes
-    m.loadingLabel.visible      = false
-    m.globalError.visible       = false
-    m.swimlanesScroller.visible = true
+    print "[MainScene] Categories loaded: "; categories.count()
 
-    ' Bind each CategoryModel to its SwimLane
-    for i = 0 to m.swimlanes.count() - 1
-        if i < categories.count() then
-            m.swimlanes[i].categoryModel = categories[i]
+    ' Validate categories
+    if categories = invalid or categories.count() = 0 then
+        print "[MainScene] ERROR: No categories available"
+        showGlobalError("No categories available")
+        return
+    end if
+
+    ' Hide loading, show content
+    m.loadingLabel.visible = false
+    m.globalError.visible = false
+
+    ' Create ContentNode hierarchy
+    print "[MainScene] Building ContentNode tree..."
+    rootContent = CreateObject("roSGNode", "ContentNode")
+
+    totalItems = 0
+    rowIndex = 0
+
+    for each category in categories
+        print "[MainScene] ----------------------------------------"
+        print "[MainScene] Row "; rowIndex; ": "; category.name
+        
+        ' Create row node
+        rowNode = CreateObject("roSGNode", "ContentNode")
+        rowNode.title = category.display_name  ' Use display_name for UI
+        
+        ' Get images for this category
+        images = category.images
+        
+        if images = invalid then
+            print "[MainScene]   ERROR: images is invalid"
+            rowIndex = rowIndex + 1
+            continue for
+        end if
+        
+        if images.count() = 0 then
+            print "[MainScene]   WARNING: No images in category"
+            rowIndex = rowIndex + 1
+            continue for
+        end if
+        
+        print "[MainScene]   Images in category: "; images.count()
+        
+        ' Add images to row
+        itemIndex = 0
+        for each image in images
+            ' Create item node
+            itemNode = CreateObject("roSGNode", "ContentNode")
+            
+            ' === Set poster URLs ===
+            if image.url_thumbnail <> invalid and image.url_thumbnail <> "" then
+                itemNode.HDPosterUrl = image.url_thumbnail
+                itemNode.SDPosterUrl = image.url_thumbnail
+            else
+                ' Skip items with no URL
+                continue for
+            end if
+            
+            ' Set title
+            if image.title <> invalid then
+                itemNode.title = image.title
+            else
+                itemNode.title = "Untitled"
+            end if
+            
+            ' Store full image data for detail screen
+            itemNode.addField("imageData", "assocarray", false)
+            itemNode.imageData = image
+            
+            ' Add to row
+            rowNode.appendChild(itemNode)
+            itemIndex = itemIndex + 1
+            totalItems = totalItems + 1
+        end for
+        
+        print "[MainScene]   Added "; itemIndex; " items to row"
+        
+        ' Only add row if it has items
+        if rowNode.getChildCount() > 0 then
+            rootContent.appendChild(rowNode)
+            rowIndex = rowIndex + 1
         end if
     end for
 
-    print "[MainScene] Swimlanes refreshed with "; categories.count(); " categories"
+    print "[MainScene] ----------------------------------------"
+    print "[MainScene] ContentNode tree complete"
+    print "[MainScene]   Total rows: "; rootContent.getChildCount()
+    print "[MainScene]   Total items: "; totalItems
+
+    ' === SET CONTENT ON ROWLIST ===
+    print "[MainScene] Setting content on RowList..."
+    m.rowList.content = rootContent
+
+    if m.rowList.content = invalid then
+        print "[MainScene] ERROR: Failed to set content on RowList!"
+        return
+    end if
+
+    print "[MainScene] Content set successfully"
+    
+    ' Show the RowList
+    m.rowList.visible = true
+    print "[MainScene] RowList made visible"
+
+    ' === SET FOCUS - Scene already has focus from init() ===
+    print "[MainScene] Transferring focus to RowList..."
+    
+    ' Jump to first item BEFORE setting focus
+    m.rowList.jumpToRowItem = [0, 0]
+    print "[MainScene] Jumped to [0, 0]"
+    
+    ' Small delay to ensure RowList is fully rendered
+    ' This is critical for focus to work properly
+    timer = CreateObject("roSGNode", "Timer")
+    timer.duration = 0.1
+    timer.repeat = false
+    timer.observeField("fire", "onFocusTimer")
+    m.focusTimer = timer
+    timer.control = "start"
+
+    print "========================================="
+    print "[MainScene] POPULATE COMPLETE"
+    print "========================================="
 end sub
 
 
 ' ******************************************************
-' Show global error state
+' Focus timer callback - sets focus after RowList renders
+' ******************************************************
+sub onFocusTimer()
+    print "[MainScene] Focus timer fired - setting RowList focus"
+    
+    ' Give focus to RowList
+    m.rowList.setFocus(true)
+    
+    ' Verify focus
+    if m.rowList.hasFocus() then
+        print "[MainScene] SUCCESS: RowList has focus!"
+        print "[MainScene] Focus position: ["; m.rowList.rowItemFocused[0]; ", "; m.rowList.rowItemFocused[1]; "]"
+    else
+        print "[MainScene] WARNING: RowList does NOT have focus - retrying..."
+        ' Force scene focus first, then RowList
+        m.top.setFocus(true)
+        m.rowList.setFocus(true)
+        
+        if m.rowList.hasFocus() then
+            print "[MainScene] SUCCESS on retry!"
+        else
+            print "[MainScene] FAILED: Focus could not be set"
+        end if
+    end if
+    
+    ' Clean up timer
+    m.focusTimer = invalid
+end sub
+
+
+' ******************************************************
+' Show global error
 ' ******************************************************
 sub showGlobalError(message as String)
-    m.loadingLabel.visible      = false
-    m.swimlanesScroller.visible = false
-    m.globalError.visible       = true
-    m.globalError.text          = message
-    print "[MainScene] Global error: "; message
+    print "[MainScene] ERROR: "; message
+    m.loadingLabel.visible = false
+    m.rowList.visible = false
+    m.globalError.visible = true
+    m.globalError.text = message
 end sub
 
 
 ' ******************************************************
-' Focus management — set focus to a specific swimlane
+' Handle item selection
 ' ******************************************************
-sub setFocusToLane(index as Integer)
-    if m.swimlanes.count() = 0 then return
+sub onItemSelected()
+    rowIndex = m.rowList.rowItemSelected[0]
+    itemIndex = m.rowList.rowItemSelected[1]
+    
+    print "[MainScene] ========================================="
+    print "[MainScene] ITEM SELECTED"
+    print "[MainScene]   Row: "; rowIndex
+    print "[MainScene]   Item: "; itemIndex
+    print "[MainScene] ========================================="
 
-    ' Clamp
-    if index < 0 then index = 0
-    if index >= m.swimlanes.count() then index = m.swimlanes.count() - 1
-
-    m.focusedLaneIndex = index
-    m.swimlanes[index].setFocusToCard(0)
-
-    ' Scroll container to keep focused lane visible
-    scrollToLane(index)
-
-    print "[MainScene] Focus moved to lane "; index
-end sub
-
-
-' ******************************************************
-' Scroll the container so the focused lane is visible
-' ******************************************************
-sub scrollToLane(index as Integer)
-    ' Each swimlane is CARD_HEIGHT(300) + title(50) + spacing(40) = 390px
-    laneHeight   = 390
-    screenHeight = 980   ' usable height below header
-    laneTop      = index * laneHeight
-
-    ' Only scroll if lane is below visible area
-    if laneTop > screenHeight / 2 then
-        m.swimlanesScroller.translation = [60, 100 - (laneTop - screenHeight / 2)]
+    ' Get selected item
+    selectedItem = m.rowList.content.getChild(rowIndex).getChild(itemIndex)
+    
+    if selectedItem <> invalid and selectedItem.imageData <> invalid then
+        imageModel = selectedItem.imageData
+        print "[MainScene]   Image: "; imageModel.title
+        
+        ' Notify ViewModel
+        m.viewModel.handleImageSelection(rowIndex, itemIndex)
+        
+        if m.viewModel.navigationRequested then
+            openDetailScreen(imageModel)
+            m.viewModel.navigationRequested = false
+        end if
     else
-        m.swimlanesScroller.translation = [60, 100]
+        print "[MainScene]   ERROR: Invalid selected item"
     end if
 end sub
 
 
 ' ******************************************************
-' Called when appBgColor is set from main.brs
+' Handle focus changes
+' ******************************************************
+sub onItemFocused()
+    rowIndex = m.rowList.rowItemFocused[0]
+    itemIndex = m.rowList.rowItemFocused[1]
+    
+    print "[MainScene] Focus: ["; rowIndex; ", "; itemIndex; "]"
+end sub
+
+
+' ******************************************************
+' Open detail screen
+' ******************************************************
+sub openDetailScreen(imageModel as Object)
+    print "[MainScene] ========================================="
+    print "[MainScene] OPENING DETAIL SCREEN"
+    print "[MainScene]   Title: "; imageModel.title
+    if imageModel.url_large <> invalid then
+        print "[MainScene]   URL: "; imageModel.url_large
+    end if
+    print "[MainScene] ========================================="
+    
+    ' TODO: FG-017 - Create detail screen
+end sub
+
+
+' ******************************************************
+' Handle detail close
+' ******************************************************
+sub onDetailClosed()
+    print "[MainScene] Detail screen closed, restoring focus"
+    m.rowList.setFocus(true)
+end sub
+
+
+' ******************************************************
+' Theme changes
 ' ******************************************************
 sub onBackgroundColorChanged()
     if m.top.appBgColor <> "" then
         m.top.backgroundColor = m.top.appBgColor
-        print "[MainScene] Background color: "; m.top.appBgColor
     end if
 end sub
 
-
-' ******************************************************
-' Called when appTextColor is set from main.brs
-' ******************************************************
 sub onTextColorChanged()
     if m.top.appTextColor <> "" then
-        if m.appTitle <> invalid then
-            m.appTitle.color = m.top.appTextColor
-        end if
-        if m.loadingLabel <> invalid then
-            m.loadingLabel.color = m.top.appTextColor
-        end if
-        print "[MainScene] Text color: "; m.top.appTextColor
+        if m.appTitle <> invalid then m.appTitle.color = m.top.appTextColor
+        if m.loadingLabel <> invalid then m.loadingLabel.color = m.top.appTextColor
     end if
 end sub
 
 
 ' ******************************************************
-' Called when any swimlane fires itemSelected
-' Delegate to ViewModel for detail navigation
-' ******************************************************
-sub onImageSelected()
-    for i = 0 to m.swimlanes.count() - 1
-        lane = m.swimlanes[i]
-        if lane.itemSelected <> invalid then
-            print "[MainScene] Image selected from lane "; i
-            m.viewModel.handleImageSelection(i, lane.focusedCardIndex)
-
-            if m.viewModel.navigationRequested then
-                openDetailScreen(lane.itemSelected)
-                m.viewModel.navigationRequested = false
-            end if
-            return
-        end if
-    end for
-end sub
-
-
-' ******************************************************
-' Navigate to detail screen with selected image
-' ******************************************************
-sub openDetailScreen(imageModel as Object)
-    print "[MainScene] Opening detail for: "; imageModel.title
-    ' Detail screen integration handled in FG-016
-end sub
-
-
-' ******************************************************
-' Handle remote key events — vertical swimlane navigation
-' Left/Right delegated to focused swimlane
+' Key event handling - RowList handles navigation automatically
 ' ******************************************************
 function onKeyEvent(key as String, press as Boolean) as Boolean
     if not press then return false
 
     print "[MainScene] Key: "; key
 
-    if key = "down" then
-        newIndex = m.focusedLaneIndex + 1
-        if newIndex < m.swimlanes.count() then
-            setFocusToLane(newIndex)
-            return true
-        end if
-
-    else if key = "up" then
-        newIndex = m.focusedLaneIndex - 1
-        if newIndex >= 0 then
-            setFocusToLane(newIndex)
-            return true
-        end if
-
-    else if key = "back" then
-        print "[MainScene] Back - allowing app exit"
-        return false
-
+    ' Back button - allow app to exit
+    if key = "back" then
+        print "[MainScene] Back pressed - exiting app"
+        return false  ' Return false to allow system to handle (exits app)
+    
+    ' Options button (for future settings/menu)
     else if key = "options" then
         print "[MainScene] Options pressed"
-        return true
+        return true  ' Consume the event
     end if
 
+    ' Let RowList handle all directional navigation (up/down/left/right/OK)
     return false
 end function

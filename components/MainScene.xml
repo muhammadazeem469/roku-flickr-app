@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- ******************************************************
-  ** MainScene.xml
-  ** Root scene - displays 12 vertical SwimLane rows
-  ** Ticket: FG-015
+  ** MainScene.xml (RowList - CORRECTED)
+  ** CRITICAL FIXES:
+  ** 1. itemSize changed to [280, 210] for proper horizontal layout
+  ** 2. rowLabelOffset changed to [[0, 20]] (array of arrays)
+  ** 3. Added rowItemSize for consistency
   ****************************************************** -->
 
 <component name="MainScene" extends="Scene">
@@ -12,8 +14,7 @@
     </interface>
 
     <children>
-
-        <!-- App title header -->
+        <!-- App Title -->
         <Label
             id="appTitle"
             text="Flickr Gallery"
@@ -24,7 +25,7 @@
             color="0xFFFFFF"
         />
 
-        <!-- Global loading indicator (shown during init) -->
+        <!-- Loading Label -->
         <Label
             id="loadingLabel"
             text="Loading categories..."
@@ -36,7 +37,7 @@
             visible="true"
         />
 
-        <!-- Global error message -->
+        <!-- Global Error Label -->
         <Label
             id="globalError"
             translation="[960, 540]"
@@ -49,63 +50,59 @@
             visible="false"
         />
 
-        <!-- Vertical swimlane container -->
-        <ScrollingGroup
-            id="swimlanesScroller"
-            translation="[60, 100]"
+        <!-- RowList - Netflix-style Swimlane -->
+        <RowList
+            id="categoryRowList"
+            translation="[10, 100]"
             visible="false"
-        >
-            <LayoutGroup
-                id="swimlanesContainer"
-                layoutDirection="vert"
-                itemSpacings="[40]"
-            >
-                <SwimLane id="swimlane_0" />
-                <SwimLane id="swimlane_1" />
-                <SwimLane id="swimlane_2" />
-                <SwimLane id="swimlane_3" />
-                <SwimLane id="swimlane_4" />
-                <SwimLane id="swimlane_5" />
-                <SwimLane id="swimlane_6" />
-                <SwimLane id="swimlane_7" />
-                <SwimLane id="swimlane_8" />
-                <SwimLane id="swimlane_9" />
-                <SwimLane id="swimlane_10" />
-                <SwimLane id="swimlane_11" />
-            </LayoutGroup>
-        </ScrollingGroup>
-
+            itemSize="[1800, 210]"
+            rowItemSize="[[280, 210]]"
+            itemSpacing="[0, 80]"
+            numRows="3"
+            rowItemSpacing="[[30, 0]]"
+            focusXOffset="[10]"
+            showRowLabel="[true]"
+            rowLabelOffset="[[0, 20]]"
+            drawFocusFeedback="true"
+            drawFocusFeedbackOnTop="false"
+            rowFocusAnimationStyle="floatingFocus"
+            vertFocusAnimationStyle="floatingFocus"
+        />
     </children>
 
-    <!--
-        Script load order matters — dependencies must come before dependents.
+    <!-- Load order: dependencies before dependents -->
 
-        Layer 1: Validators (no dependencies)
-        Layer 2: Models (depend on validators)
-        Layer 3: Config (no dependencies)
-        Layer 4: ViewModels (depend on models + config)
-        Layer 5: Scene logic
-    -->
-
-    <!-- Layer 1: Validators -->
+    <!-- Validators -->
     <script type="text/brightscript" uri="pkg:/source/Validators/ImageValidators.brs" />
+    <script type="text/brightscript" uri="pkg:/source/Validators/CategoryValidator.brs" />
 
-    <!-- Layer 2: Models -->
+    <!-- Utils -->
+    <script type="text/brightscript" uri="pkg:/source/utils/ContentNodeConverter.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/CategoryContentNodeConverter.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/ImageUrlBuilder.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/ImageUrlBuilder_Extended.brs" />
+
+    <!-- Models -->
     <script type="text/brightscript" uri="pkg:/source/models/ImageModel.brs" />
     <script type="text/brightscript" uri="pkg:/source/models/CategoryModel.brs" />
     <script type="text/brightscript" uri="pkg:/source/models/CategoryStateManager.brs" />
     <script type="text/brightscript" uri="pkg:/source/models/CategoryImageManager.brs" />
     <script type="text/brightscript" uri="pkg:/source/models/CategoryPaginationManager.brs" />
+    <script type="text/brightscript" uri="pkg:/source/models/ImageMapper.brs" />
 
-    <!-- Layer 3: Config -->
+    <!-- Config -->
+    <script type="text/brightscript" uri="pkg:/source/config/AppConfig.brs" />
     <script type="text/brightscript" uri="pkg:/source/config/CategoryConfig.brs" />
+    <script type="text/brightscript" uri="pkg:/source/config/ImageConfig.brs" />
+    <script type="text/brightscript" uri="pkg:/source/config/NetworkConfig.brs" />
+    <script type="text/brightscript" uri="pkg:/source/config/UIConfig.brs" />
 
-    <!-- Layer 4: ViewModels -->
+    <!-- ViewModels -->
     <script type="text/brightscript" uri="pkg:/source/viewmodels/MainViewModel_StateManager.brs" />
     <script type="text/brightscript" uri="pkg:/source/viewmodels/MainViewModel_CategoryLoader.brs" />
     <script type="text/brightscript" uri="pkg:/source/viewmodels/MainViewModel.brs" />
 
-    <!-- Layer 5: Scene logic -->
+    <!-- Scene logic -->
     <script type="text/brightscript" uri="pkg:/components/MainScene.brs" />
 
 </component>

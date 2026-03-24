@@ -4,9 +4,10 @@
   ** Horizontal scrolling row of ImageCard components
   ** representing a single Flickr category
   ** Ticket: FG-014
+  ** UPDATED: Added clipping rect to hide off-screen cards
   ****************************************************** -->
 
-<component name="SwimLane" extends="Group">
+<component name="SwimLane" extends="Group" focusable="true">
     <interface>
         <!-- Data -->
         <field id="categoryModel" type="assocarray" alwaysNotify="true" />
@@ -18,6 +19,9 @@
         <!-- State (readable by parent) -->
         <field id="focusedCardIndex" type="integer" value="0" />
         <field id="itemSelected" type="assocarray" alwaysNotify="true" />
+
+        <!-- Functions callable by parent -->
+        <function name="setFocusToCard" />
     </interface>
 
     <children>
@@ -32,14 +36,21 @@
             vertAlign="center"
         />
 
-        <!-- Card container - holds ImageCard children dynamically -->
-        <LayoutGroup
-            id="cardContainer"
+        <!-- Clipping container to hide cards that scroll off-screen -->
+        <Group
+            id="cardClipContainer"
             translation="[0, 50]"
-            layoutDirection="horiz"
-            horizAlignment="left"
-            itemSpacings="[20]"
-        />
+            clippingRect="[0, 0, 1840, 350]"
+        >
+            <!-- Card container - holds ImageCard children dynamically -->
+            <LayoutGroup
+                id="cardContainer"
+                translation="[0, 0]"
+                layoutDirection="horiz"
+                horizAlignment="left"
+                itemSpacings="[20]"
+            />
+        </Group>
 
         <!-- Loading spinner (visible while isLoading=true) -->
         <BusySpinner

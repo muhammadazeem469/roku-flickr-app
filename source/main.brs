@@ -4,22 +4,17 @@
 ' ******************************************************
 
 sub Main()
-    config = GetApiConfig()
+    ' NOTE: GetApiConfig() and all TestXxxSuite() calls have been removed.
+    ' They reference functions that only exist inside SceneGraph component
+    ' script scope and are not available here in main.brs — calling them
+    ' crashes the app before the screen is ever created.
+    ' Tests should be run from a dedicated test scene, not the entry point.
+
     print "========================================="
     print "Flickr Gallery Roku Channel Starting..."
     print "Version: 1.0.0"
     print "========================================="
-    
-    TestImageModelSuite()
-    TestCategoryModelSuite()
-    TestMainViewModelSuite()
-    TestDetailViewModelSuite()
-    if config.RUN_NETWORK_TESTS = true then
-        TestNetworkUtilsSuite()
-    end if
 
-    TestFlickrServiceSuite()
-    TestImageUrlBuilderSuite()                   
     ' Initialize screen
     print "[INIT] Creating roSGScreen..."
     screen = CreateObject("roSGScreen")
@@ -28,13 +23,13 @@ sub Main()
         return
     end if
     print "[INIT] roSGScreen created successfully"
-    
+
     ' Initialize message port
     print "[INIT] Creating message port..."
-    m.port = CreateObject("roMessagePort")
-    screen.setMessagePort(m.port)
+    port = CreateObject("roMessagePort")
+    screen.setMessagePort(port)
     print "[INIT] Message port initialized"
-    
+
     ' Create and display main scene
     print "[INIT] Loading MainScene component..."
     scene = screen.CreateScene("MainScene")
@@ -44,31 +39,22 @@ sub Main()
         return
     end if
     print "[INIT] MainScene loaded successfully"
-    
-    ' Load UI configuration and pass to scene
-    print "[INIT] Loading UI configuration..."
-    scene.appBgColor = "0x000000"     ' from UIConfig.COLORS.BACKGROUND
-    scene.appTextColor = "0xFFFFFF"   ' from UIConfig.COLORS.TEXT_PRIMARY
+
+    ' Pass UI configuration to scene
+    scene.appBgColor   = "0x000000"
+    scene.appTextColor = "0xFFFFFF"
     print "[INIT] UI configuration applied to scene"
-    
-    print "[INIT] Displaying screen..."
+
     screen.show()
-    print "[INIT] Screen displayed"
-    
     print "[READY] Application ready - Entering event loop"
     print "========================================="
-    
+
     ' Main event loop
-    while(true)
-        msg = wait(0, m.port)
-        msgType = type(msg)
-        
-        if msgType = "roSGScreenEvent"
+    while true
+        msg = wait(0, port)
+        if type(msg) = "roSGScreenEvent" then
             if msg.isScreenClosed() then
-                print "========================================="
-                print "[SHUTDOWN] Screen closed by user"
-                print "[SHUTDOWN] Flickr Gallery shutting down..."
-                print "========================================="
+                print "[SHUTDOWN] Screen closed - exiting"
                 return
             end if
         end if

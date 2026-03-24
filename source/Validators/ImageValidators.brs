@@ -14,7 +14,7 @@ end function
 function ImageValidator_isValid(imageModel as Object) as Boolean
     if imageModel = invalid then return false
     
-    return m.hasRequiredFields(imageModel) and m.hasValidUrls(imageModel)
+    return ImageValidator_hasRequiredFields(imageModel) and ImageValidator_hasValidUrls(imageModel)
 end function
 
 
