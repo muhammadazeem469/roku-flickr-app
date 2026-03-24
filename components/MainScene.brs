@@ -1,6 +1,7 @@
 ' ******************************************************
 ' MainScene.brs (RowList - FINAL FIX)
 ' CRITICAL FIX: Fixed focus sequence to prevent invalid focus state
+' UPDATED: FG-017 - Integrated DetailScene navigation
 ' ******************************************************
 
 sub init()
@@ -42,6 +43,9 @@ sub init()
     m.viewModel.init()
     m.viewModel.loadAllCategories()
     print "[MainScene] ViewModel initialized"
+
+    ' Initialize detail scene reference
+    m.detailScene = invalid
 
     ' Populate RowList with data
     populateRowList()
@@ -334,7 +338,24 @@ sub openDetailScreen(imageModel as Object)
     end if
     print "[MainScene] ========================================="
     
-    ' TODO: FG-017 - Create detail screen
+    ' Create DetailScene component
+    m.detailScene = CreateObject("roSGNode", "DetailScene")
+    
+    if m.detailScene = invalid then
+        print "[MainScene] ERROR: Failed to create DetailScene"
+        return
+    end if
+    
+    ' Set the image model
+    m.detailScene.imageModel = imageModel
+    
+    ' Observe close event
+    m.detailScene.observeField("closeRequested", "onDetailClosed")
+    
+    ' Add to scene
+    m.top.appendChild(m.detailScene)
+    
+    print "[MainScene] DetailScene created and added to scene graph"
 end sub
 
 
@@ -343,7 +364,17 @@ end sub
 ' ******************************************************
 sub onDetailClosed()
     print "[MainScene] Detail screen closed, restoring focus"
+    
+    ' Remove detail scene from scene graph
+    if m.detailScene <> invalid then
+        m.top.removeChild(m.detailScene)
+        m.detailScene = invalid
+    end if
+    
+    ' Restore focus to RowList
     m.rowList.setFocus(true)
+    
+    print "[MainScene] Focus restored to RowList"
 end sub
 
 
@@ -372,10 +403,17 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
 
     print "[MainScene] Key: "; key
 
-    ' Back button - allow app to exit
+    ' Back button
     if key = "back" then
-        print "[MainScene] Back pressed - exiting app"
-        return false  ' Return false to allow system to handle (exits app)
+        ' If DetailScene is open, close it instead of exiting app
+        if m.detailScene <> invalid then
+            print "[MainScene] DetailScene is open - closing it"
+            onDetailClosed()
+            return true  ' Consume the event - don't exit app
+        else
+            print "[MainScene] Back pressed - exiting app"
+            return false  ' Return false to allow system to handle (exits app)
+        end if
     
     ' Options button (for future settings/menu)
     else if key = "options" then
@@ -383,6 +421,6 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
         return true  ' Consume the event
     end if
 
-    ' Let RowList handle all directional navigation (up/down/left/right/OK)
+    ' Let RowList handle all directional navigation
     return false
 end function

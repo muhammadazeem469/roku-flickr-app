@@ -1,7 +1,7 @@
 ' ******************************************************
 ' MainViewModel_CategoryLoader.brs
 ' Handles category data loading for MainViewModel
-' In Sprint 3, this will make real API calls
+' MOCK DATA with working placeholder images for FG-017
 ' ******************************************************
 
 function MainViewModel_CategoryLoader() as Object
@@ -13,7 +13,7 @@ function MainViewModel_CategoryLoader() as Object
 end function
 
 
-' Load category data (MOCK for Sprint 2, real API in Sprint 3)
+' Load category data (MOCK for development, real API in future ticket)
 function MainViewModel_CategoryLoader_loadCategory(viewModel as Object, categoryIndex as Integer) as Void
     print "[CategoryLoader] Loading category index: "; categoryIndex
 
@@ -29,7 +29,6 @@ function MainViewModel_CategoryLoader_loadCategory(viewModel as Object, category
     viewModel.categories[categoryIndex] = category
 
     ' MOCK: Create sample images for testing
-    ' In Sprint 3, this will be replaced with actual API call
     ' NOTE: call by full function name — m. does not refer to this AA here
     mockImages = MainViewModel_CategoryLoader_createMockImages(category.name, 10)
 
@@ -81,8 +80,8 @@ function MainViewModel_CategoryLoader_refreshCategory(viewModel as Object, categ
 end function
 
 
-' Create mock images for testing (Sprint 2 only)
-' In Sprint 3, this will be replaced with real API responses
+' Create mock images for testing - UPDATED with working URLs
+' Compatible with DetailScene - uses "mock_" prefix so DetailScene can detect and skip PhotoInfoTask
 function MainViewModel_CategoryLoader_createMockImages(categoryName as String, count as Integer) as Object
     images = []
 
@@ -90,21 +89,23 @@ function MainViewModel_CategoryLoader_createMockImages(categoryName as String, c
         image = CreateImageModel()
         image.id          = "mock_" + categoryName + "_" + i.ToStr()
         image.title       = categoryName + " Image " + i.ToStr()
-        image.description = "Mock description for " + categoryName
-        image.owner       = "MockPhotographer"
-        image.ownerId     = "mock_owner_123"
+        image.description = "This is a sample description for testing DetailScene layout. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+        image.owner       = "Sample Photographer " + i.ToStr()
+        image.ownerId     = "mock_owner_" + i.ToStr()
 
-        ' Mock URLs — will show error placeholder until real API is wired up
-        baseUrl           = "https://live.staticflickr.com/65535/" + image.id + "_secret"
-        image.url_thumbnail = baseUrl + "_q.jpg"
-        image.url_small     = baseUrl + "_n.jpg"
-        image.url_medium    = baseUrl + "_z.jpg"
-        image.url_large     = baseUrl + "_b.jpg"
+        ' FIXED: Use picsum.photos for actual working placeholder images
+        ' Generate a semi-random ID based on category name + index
+        baseId = (Asc(categoryName.Left(1)) * 100 + i) Mod 1000
+        image.url_thumbnail = "https://picsum.photos/150/150?random=" + baseId.ToStr()
+        image.url_small     = "https://picsum.photos/320/240?random=" + baseId.ToStr()
+        image.url_medium    = "https://picsum.photos/640/480?random=" + baseId.ToStr()
+        image.url_large     = "https://picsum.photos/1024/768?random=" + baseId.ToStr()
 
         image.width  = 1024
         image.height = 768
-        image.tags   = [LCase(categoryName), "mock", "test"]
+        image.tags   = [LCase(categoryName), "sample", "test"]
         image.views  = 100 * i
+        image.datePosted = "1609459200"  ' Jan 1, 2021
 
         images.Push(image)
     end for
