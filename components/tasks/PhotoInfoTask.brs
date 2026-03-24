@@ -1,7 +1,7 @@
 ' ******************************************************
 ' PhotoInfoTask.brs
 ' Task for loading photo information from Flickr API
-' Runs on task thread to avoid blocking render thread
+' MODIFIED FOR EASY TESTING - Change USE_MOCK_DATA to test
 ' ******************************************************
 
 sub init()
@@ -10,7 +10,6 @@ sub init()
 end sub
 
 ' Load photo information from Flickr API
-' This runs on a separate thread when the task is started
 sub loadPhotoInfo()
     print "[PhotoInfoTask] Loading photo info for ID: "; m.top.photoId
     
@@ -26,7 +25,23 @@ sub loadPhotoInfo()
         return
     end if
     
-    ' Build API URL
+    ' =====================================================
+    ' TESTING MODE - Change this to test different scenarios
+    ' =====================================================
+    USE_MOCK_DATA = false  ' ← SET TO true FOR TESTING, false FOR REAL API
+    
+    if USE_MOCK_DATA then
+        print "[PhotoInfoTask] *** MOCK MODE ENABLED ***"
+        print "[PhotoInfoTask] Using mock data instead of real API"
+        
+        ' Get mock response based on photo ID
+        mockResult = getMockResponse(photoId)
+        m.top.result = mockResult
+        return
+    end if
+    ' =====================================================
+    
+    ' Real API call (only runs if USE_MOCK_DATA = false)
     apiKey = "452b3b7a5d806dcd110842e6649c604d"
     url = "https://api.flickr.com/services/rest/"
     url = url + "?method=flickr.photos.getInfo"
@@ -37,7 +52,6 @@ sub loadPhotoInfo()
     
     print "[PhotoInfoTask] Request URL: "; url
     
-    ' Create HTTP request (THIS IS OK ON TASK THREAD)
     request = CreateObject("roUrlTransfer")
     
     if request = invalid then
@@ -56,7 +70,6 @@ sub loadPhotoInfo()
     request.SetCertificatesFile("common:/certs/ca-bundle.crt")
     request.InitClientCertificates()
     
-    ' Make synchronous request (OK because we're on a task thread)
     response = request.GetToString()
     
     if response = invalid or response = "" then
@@ -71,7 +84,6 @@ sub loadPhotoInfo()
     
     print "[PhotoInfoTask] Response received, length: "; response.Len()
     
-    ' Parse JSON response
     json = ParseJson(response)
     
     if json = invalid then
@@ -84,7 +96,6 @@ sub loadPhotoInfo()
         return
     end if
     
-    ' Check for API error
     if json.stat <> invalid and json.stat = "fail" then
         errorMsg = "API Error"
         if json.message <> invalid then
@@ -99,7 +110,6 @@ sub loadPhotoInfo()
         return
     end if
     
-    ' Extract photo data
     if json.photo = invalid then
         print "[PhotoInfoTask] ERROR: No photo data in response"
         result = {}
@@ -112,10 +122,137 @@ sub loadPhotoInfo()
     
     print "[PhotoInfoTask] Photo info loaded successfully"
     
-    ' Return success result
     result = {}
     result.success = true
     result.error = ""
     result.data = json.photo
     m.top.result = result
 end sub
+
+
+' ******************************************************
+' MOCK DATA FOR TESTING
+' ******************************************************
+function getMockResponse(photoId as String) as Object
+    print "[PhotoInfoTask] Getting mock response for ID: "; photoId
+    
+    ' TEST: Success with all fields
+    if photoId = "test_success" or photoId = "mock_success" or photoId.Left(5) = "mock_" then
+        print "[PhotoInfoTask] Mock Scenario: SUCCESS with all fields"
+        
+        result = {}
+        result.success = true
+        result.error = ""
+        result.data = {
+            id: photoId
+            title: { _content: "Beautiful Sunset Over Mountains" }
+            description: { _content: "This stunning photograph captures the golden hour as the sun sets behind snow-capped mountain peaks." }
+            owner: {
+                nsid: "12345678@N00"
+                username: "NaturePhotographer"
+                realname: "John Smith"
+            }
+            dates: {
+                posted: "1704067200"
+                taken: "2024-01-15 14:30:00"
+            }
+            views: "15234"
+            comments: { _content: "42" }
+        }
+        return result
+    end if
+    
+    ' TEST: Missing optional fields
+    if photoId = "test_minimal" or photoId = "mock_minimal" then
+        print "[PhotoInfoTask] Mock Scenario: SUCCESS with missing fields"
+        
+        result = {}
+        result.success = true
+        result.error = ""
+        result.data = {
+            id: photoId
+            title: { _content: "Untitled Photo" }
+            description: { _content: "" }
+            owner: {
+                nsid: "12345678@N00"
+                username: "Anonymous"
+            }
+            dates: {
+                posted: "1704067200"
+            }
+        }
+        return result
+    end if
+    
+    ' TEST: Photo not found error
+    if photoId = "test_notfound" or photoId = "mock_error" then
+        print "[PhotoInfoTask] Mock Scenario: API ERROR - Photo not found"
+        
+        result = {}
+        result.success = false
+        result.error = "Photo not found"
+        result.data = invalid
+        return result
+    end if
+    
+    ' TEST: Network error
+    if photoId = "test_network_error" then
+        print "[PhotoInfoTask] Mock Scenario: NETWORK ERROR"
+        
+        result = {}
+        result.success = false
+        result.error = "Network timeout - Unable to connect to server"
+        result.data = invalid
+        return result
+    end if
+    
+    ' TEST: Extreme values
+    if photoId = "test_extreme" then
+        print "[PhotoInfoTask] Mock Scenario: SUCCESS with extreme values"
+        
+        result = {}
+        result.success = true
+        result.error = ""
+        result.data = {
+            id: photoId
+            title: { _content: "A very long title that goes on and on and might break the UI if not handled properly" }
+            description: { _content: "Very long description with special characters: é, ñ, 中文, emoji 🌄🏔️" }
+            owner: {
+                nsid: "12345678@N00"
+                username: "VeryLongUsernameToTest123456789"
+                realname: "Firstname Middlename Lastname Jr."
+            }
+            dates: {
+                posted: "1704067200"
+                taken: "2024-01-15 14:30:00"
+            }
+            views: "999999999"
+            comments: { _content: "12345" }
+        }
+        return result
+    end if
+    
+    ' DEFAULT: Normal success
+    print "[PhotoInfoTask] Mock Scenario: DEFAULT success"
+    
+    result = {}
+    result.success = true
+    result.error = ""
+    result.data = {
+        id: photoId
+        title: { _content: "Sample Photo" }
+        description: { _content: "Sample description for testing" }
+        owner: {
+            nsid: "12345678@N00"
+            username: "TestUser"
+            realname: "Test User"
+        }
+        dates: {
+            posted: "1704067200"
+            taken: "2024-01-15 12:00:00"
+        }
+        views: "1234"
+        comments: { _content: "5" }
+    }
+    return result
+end function
