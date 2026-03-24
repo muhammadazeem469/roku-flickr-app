@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ******************************************************
+  ** CategoryLoadTask.xml
+  ** Task component for loading category data
+  ** CRITICAL: HTTP requests must run on Task thread
+  ****************************************************** -->
+
+<component name="CategoryLoadTask" extends="Task">
+    <interface>
+        <!-- Input fields -->
+        <field id="categoryMethod" type="string" />
+        <field id="categoryTags" type="string" />
+        <field id="page" type="integer" />
+        <field id="perPage" type="integer" />
+        
+        <!-- Output field -->
+        <field id="result" type="assocarray" />
+    </interface>
+
+    <!-- Import dependencies needed for API calls -->
+    
+    <!-- Config - MUST come early as used by Utils -->
+    <script type="text/brightscript" uri="pkg:/source/config/AppConfig.brs" />
+    <script type="text/brightscript" uri="pkg:/source/config/NetworkConfig.brs" />
+    <script type="text/brightscript" uri="pkg:/source/config/ImageConfig.brs" />
+    
+    <!-- Models - MUST come first as they're used by other modules -->
+    <script type="text/brightscript" uri="pkg:/source/models/ImageModel.brs" />
+    <script type="text/brightscript" uri="pkg:/source/models/ImageMapper.brs" />
+    
+    <!-- Utils -->
+    <script type="text/brightscript" uri="pkg:/source/utils/ApiHelper.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/ImageUrlBuilder.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/ImageUrlBuilder_Extended.brs" />
+
+    <!-- Network Layer -->
+    <script type="text/brightscript" uri="pkg:/source/network/JsonParser.brs" />
+    <script type="text/brightscript" uri="pkg:/source/network/ErrorHandler.brs" />
+    <script type="text/brightscript" uri="pkg:/source/network/HttpClient.brs" />
+    <script type="text/brightscript" uri="pkg:/source/network/NetworkValidator.brs" />
+
+    <!-- Services - AFTER ImageMapper since ResponseParser uses it -->
+    <script type="text/brightscript" uri="pkg:/source/services/FlickrService_ResponseParser.brs" />
+    <script type="text/brightscript" uri="pkg:/source/services/FlickrService_ApiMethods.brs" />
+    <script type="text/brightscript" uri="pkg:/source/services/FlickrService.brs" />
+
+    <!-- Task logic - keep with component in components/tasks/ -->
+    <script type="text/brightscript" uri="pkg:/components/tasks/CategoryLoadTask.brs" />
+
+</component>

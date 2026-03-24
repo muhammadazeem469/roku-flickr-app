@@ -29,6 +29,7 @@ function CreateCategoryModel(name as String, display_name as String, tags as Str
 
         ' State management
         isLoading:    false
+        isLoaded:     false
         hasError:     false
         errorMessage: ""
 
@@ -43,6 +44,7 @@ function CreateCategoryModel(name as String, display_name as String, tags as Str
 
         ' Inline state setters
         setLoading:  CategoryModel_setLoading
+        setLoaded:   CategoryModel_setLoaded
         setError:    CategoryModel_setError
         clearError:  CategoryModel_clearError
     }
@@ -55,6 +57,15 @@ function CategoryModel_setLoading(state as Boolean) as Object
     m.isLoading = state
     if state then
         print "[CategoryModel] Loading: "; m.name
+    end if
+    return m
+end function
+
+
+function CategoryModel_setLoaded(state as Boolean) as Object
+    m.isLoaded = state
+    if state then
+        print "[CategoryModel] Loaded: "; m.name; " with "; m.images.Count(); " images"
     end if
     return m
 end function
