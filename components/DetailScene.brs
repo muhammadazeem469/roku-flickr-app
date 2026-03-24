@@ -31,6 +31,9 @@ sub init()
     m.loadingLabel = m.top.findNode("loadingLabel")
     m.errorLabel = m.top.findNode("errorLabel")
 
+    ' Initialize ViewModel reference
+    m.viewModel = invalid
+
     ' Set focus to scene
     m.top.setFocus(true)
 
@@ -86,24 +89,27 @@ sub onImageModelSet()
         print "[DetailScene] WARNING: Could not find focusOverlay node"
     end if
     
-    ' Create ViewModel
+    ' STEP 1: Initialize DetailViewModel with imageModel
+    print "[DetailScene] STEP 1: Creating DetailViewModel"
     m.viewModel = CreateDetailViewModel(imageModel)
     m.viewModel.init()
     
-    ' Check for initialization errors
+    ' STEP 2: Check for initialization errors
     if m.viewModel.hasError then
         print "[DetailScene] ViewModel initialization failed: "; m.viewModel.errorMessage
         showError(m.viewModel.errorMessage)
         return
     end if
     
-    ' Display basic information immediately
+    ' STEP 3: Display basic information immediately
+    print "[DetailScene] STEP 3: Displaying basic info"
     displayBasicInfo()
     
     ' Show content immediately so image is visible
     showContent()
     
-    ' Load extended information asynchronously (in background)
+    ' STEP 4: Load extended information asynchronously
+    print "[DetailScene] STEP 4: Starting extended info load"
     loadExtendedInfo()
 end sub
 
@@ -114,18 +120,6 @@ end sub
 sub displayBasicInfo()
     print "[DetailScene] ========================================="
     print "[DetailScene] DISPLAYING BASIC INFO"
-    print "[DetailScene] ========================================="
-    
-    ' DEBUG: Print entire image model
-    print "[DetailScene] Image Model:"
-    print "[DetailScene]   ID: "; m.viewModel.image.id
-    print "[DetailScene]   Title: "; m.viewModel.image.title
-    print "[DetailScene]   url_thumbnail: "; m.viewModel.image.url_thumbnail
-    print "[DetailScene]   url_small: "; m.viewModel.image.url_small
-    print "[DetailScene]   url_medium: "; m.viewModel.image.url_medium
-    print "[DetailScene]   url_large: "; m.viewModel.image.url_large
-    print "[DetailScene]   width: "; m.viewModel.image.width
-    print "[DetailScene]   height: "; m.viewModel.image.height
     print "[DetailScene] ========================================="
     
     ' Set title
@@ -139,28 +133,15 @@ sub displayBasicInfo()
     
     ' Set large image
     if m.viewModel.image.url_large <> invalid and m.viewModel.image.url_large <> "" then
-        print "[DetailScene] ----------------------------------------"
         print "[DetailScene] SETTING LARGE IMAGE"
         print "[DetailScene] URL: "; m.viewModel.image.url_large
-        print "[DetailScene] Poster node valid: "; (m.largeImage <> invalid)
         m.largeImage.uri = m.viewModel.image.url_large
-        print "[DetailScene] Poster URI set to: "; m.largeImage.uri
-        print "[DetailScene] Poster loadStatus: "; m.largeImage.loadStatus
-        print "[DetailScene] ----------------------------------------"
     else if m.viewModel.image.url_medium <> invalid and m.viewModel.image.url_medium <> "" then
-        ' Fallback to medium if large not available
-        print "[DetailScene] ----------------------------------------"
         print "[DetailScene] LARGE NOT AVAILABLE - USING MEDIUM"
         print "[DetailScene] URL: "; m.viewModel.image.url_medium
         m.largeImage.uri = m.viewModel.image.url_medium
-        print "[DetailScene] Poster URI set to: "; m.largeImage.uri
-        print "[DetailScene] ----------------------------------------"
     else
-        print "[DetailScene] ========================================="
         print "[DetailScene] ERROR: NO IMAGE URL AVAILABLE!"
-        print "[DetailScene] url_large: "; m.viewModel.image.url_large
-        print "[DetailScene] url_medium: "; m.viewModel.image.url_medium
-        print "[DetailScene] ========================================="
         showError("Image not available")
         return
     end if
@@ -173,33 +154,28 @@ sub displayBasicInfo()
     end if
     
     ' Set basic metadata
-    
-    ' Dimensions
     if m.viewModel.dimensions <> "" then
         m.dimensionsLabel.text = "Dimensions: " + m.viewModel.dimensions
     else
         m.dimensionsLabel.text = "Dimensions: Not available"
     end if
     
-    ' Owner
     if m.viewModel.image.owner <> invalid and m.viewModel.image.owner <> "" then
         m.ownerLabel.text = "Photo by: " + m.viewModel.image.owner
     else
         m.ownerLabel.text = "Photo by: Unknown"
     end if
     
-    ' Views
     if m.viewModel.image.views > 0 then
         m.viewsLabel.text = "Views: " + FormatNumber(m.viewModel.image.views)
     else
         m.viewsLabel.text = "Views: Not available"
     end if
     
-    ' File size (not available in basic data)
+    ' File size and date will be loaded via extended info
     m.fileSizeLabel.text = "File Size: Loading..."
-    
-    ' Date (not available in basic data)
     m.dateLabel.text = "Uploaded: Loading..."
+    m.commentsLabel.visible = false
     
     print "[DetailScene] Basic info displayed"
 end sub
@@ -209,118 +185,151 @@ end sub
 ' Load extended information from API
 ' ******************************************************
 sub loadExtendedInfo()
-    print "[DetailScene] Loading extended info in background..."
+    print "[DetailScene] ========================================="
+    print "[DetailScene] LOADING EXTENDED INFO"
+    print "[DetailScene] ========================================="
     
-    ' SKIP PhotoInfoTask for mock data (FG-017 development)
-    ' Check if this is mock data by looking at ID prefix
+    ' *** TESTING OVERRIDE - CHANGE THIS TO TEST DIFFERENT SCENARIOS ***
+    ' Uncomment ONE of these lines to test different cases:
+    ' m.viewModel.image.id = "test_success"        ' All fields present
+    ' m.viewModel.image.id = "test_minimal"        ' Missing optional fields
+    ' m.viewModel.image.id = "test_notfound"       ' Photo not found error
+    ' m.viewModel.image.id = "test_network_error"  ' Network error
+    ' m.viewModel.image.id = "test_extreme"        ' Extreme values
+    ' *** END TESTING OVERRIDE ***
+    
+    ' SKIP PhotoInfoTask for mock data
     if m.viewModel.image.id.Left(5) = "mock_" then
-        print "[DetailScene] Mock data detected - skipping PhotoInfoTask"
+        print "[DetailScene] Mock data detected - skipping API call"
         updateExtendedInfoOnError()
         return
     end if
     
-    ' Don't show loading state - content is already visible
-    ' Just load the extended info quietly in the background
+    ' STEP 5: Show loading state for extended metadata
+    print "[DetailScene] STEP 5: Showing loading state for extended metadata"
     
     ' Create task to load photo info
     m.photoInfoTask = CreateObject("roSGNode", "PhotoInfoTask")
     
     if m.photoInfoTask = invalid then
         print "[DetailScene] ERROR: Failed to create PhotoInfoTask"
+        m.viewModel.handleError("Failed to create API task")
         updateExtendedInfoOnError()
-        ' Content already visible, just update the error fields
         return
     end if
     
-    ' Observe task result
-    m.photoInfoTask.observeField("result", "onPhotoInfoLoaded")
-    
-    ' Set photo ID and start task
+    ' Set photo ID
     m.photoInfoTask.photoId = m.viewModel.image.id
-    m.photoInfoTask.control = "RUN"
+    print "[DetailScene] Task created, photo ID set: "; m.photoInfoTask.photoId
     
-    print "[DetailScene] PhotoInfoTask started for ID: "; m.viewModel.image.id
+    ' Observe result
+    m.photoInfoTask.observeField("result", "onPhotoInfoLoaded")
+    print "[DetailScene] Observing task result field"
+    
+    ' Start task
+    m.photoInfoTask.control = "RUN"
+    print "[DetailScene] Task started"
+    print "[DetailScene] ========================================="
 end sub
 
 
 ' ******************************************************
-' Handle photo info loaded from task
+' Handle photo info loaded from API
 ' ******************************************************
 sub onPhotoInfoLoaded()
-    print "[DetailScene] Photo info task completed"
+    print "[DetailScene] ========================================="
+    print "[DetailScene] PHOTO INFO LOADED CALLBACK"
+    print "[DetailScene] ========================================="
     
     result = m.photoInfoTask.result
     
     if result = invalid then
         print "[DetailScene] ERROR: Invalid result from task"
+        m.viewModel.handleError("Invalid API response")
         updateExtendedInfoOnError()
-        showContent()
         return
     end if
     
+    ' STEP 6 & 7: Process API response
     if result.success then
-        print "[DetailScene] Photo info loaded successfully"
+        print "[DetailScene] STEP 6: Photo info loaded successfully"
         
         ' Parse the photo data using ViewModel
         m.viewModel.parseImageInfo(result.data)
         
-        ' Update UI with extended info
+        ' STEP 7: Update UI with extended info
+        print "[DetailScene] STEP 7: Updating UI with extended metadata"
         updateExtendedInfo()
+        
+        print "[DetailScene] Extended info load complete - SUCCESS"
     else
+        ' STEP 8: Handle error
         print "[DetailScene] Photo info loading failed: "; result.error
+        print "[DetailScene] STEP 8: Handling API error"
+        m.viewModel.handleError(result.error)
         updateExtendedInfoOnError()
+        
+        print "[DetailScene] Extended info load complete - FAILED"
     end if
-    
-    ' Content already visible, no need to call showContent()
     
     ' Clean up task
     m.photoInfoTask.unobserveField("result")
     m.photoInfoTask = invalid
+    
+    print "[DetailScene] ========================================="
 end sub
 
 
 ' ******************************************************
-' Update UI with extended information
+' Update UI with extended information from ViewModel
 ' ******************************************************
 sub updateExtendedInfo()
-    print "[DetailScene] Updating extended info..."
+    print "[DetailScene] Updating UI with extended info from ViewModel"
     
     ' Update description with full version
     if m.viewModel.fullDescription <> invalid and m.viewModel.fullDescription <> "" then
         m.descriptionLabel.text = m.viewModel.fullDescription
+        print "[DetailScene]   - Full description updated"
     end if
     
-    ' Update dimensions if we got more accurate ones
+    ' Update dimensions
     if m.viewModel.dimensions <> "" then
         m.dimensionsLabel.text = "Dimensions: " + m.viewModel.dimensions
+        print "[DetailScene]   - Dimensions: "; m.viewModel.dimensions
     end if
     
     ' Update file size
     if m.viewModel.fileSize <> "" then
         m.fileSizeLabel.text = "File Size: " + m.viewModel.fileSize
+        print "[DetailScene]   - File size: "; m.viewModel.fileSize
     else
         m.fileSizeLabel.text = "File Size: Not available"
+        print "[DetailScene]   - File size: Not available"
     end if
     
     ' Update upload date
     if m.viewModel.uploadDate <> "" then
         m.dateLabel.text = "Uploaded: " + m.viewModel.uploadDate
+        print "[DetailScene]   - Upload date: "; m.viewModel.uploadDate
     else
         m.dateLabel.text = "Uploaded: Not available"
+        print "[DetailScene]   - Upload date: Not available"
     end if
     
-    ' Update view count if we got more accurate count
+    ' Update view count
     if m.viewModel.viewCount > 0 then
         m.viewsLabel.text = "Views: " + FormatNumber(m.viewModel.viewCount)
+        print "[DetailScene]   - Views: "; m.viewModel.viewCount
     end if
     
     ' Show comment count if available
     if m.viewModel.commentCount > 0 then
         m.commentsLabel.text = "Comments: " + FormatNumber(m.viewModel.commentCount)
         m.commentsLabel.visible = true
+        print "[DetailScene]   - Comments: "; m.viewModel.commentCount
     end if
     
-    print "[DetailScene] Extended info updated"
+    print "[DetailScene] Extended info UI update complete"
 end sub
 
 
@@ -328,10 +337,12 @@ end sub
 ' Update loading fields when extended info fails
 ' ******************************************************
 sub updateExtendedInfoOnError()
-    print "[DetailScene] Updating with error fallbacks..."
+    print "[DetailScene] Gracefully handling missing extended info..."
     
     m.fileSizeLabel.text = "File Size: Not available"
     m.dateLabel.text = "Uploaded: Not available"
+    
+    print "[DetailScene] Graceful fallback complete"
 end sub
 
 
@@ -344,7 +355,6 @@ sub showLoading(message as String)
     m.contentGroup.visible = false
     m.errorGroup.visible = false
     
-    ' Start spinner
     if m.loadingSpinner <> invalid then
         m.loadingSpinner.control = "start"
     end if
@@ -355,44 +365,17 @@ end sub
 ' Show content state
 ' ******************************************************
 sub showContent()
-    print "[DetailScene] ========================================="
     print "[DetailScene] SHOWING CONTENT"
-    print "[DetailScene] ========================================="
-    
-    print "[DetailScene] Before visibility change:"
-    print "[DetailScene]   loadingGroup.visible: "; m.loadingGroup.visible
-    print "[DetailScene]   errorGroup.visible: "; m.errorGroup.visible
-    print "[DetailScene]   contentGroup.visible: "; m.contentGroup.visible
     
     m.loadingGroup.visible = false
     m.errorGroup.visible = false
     m.contentGroup.visible = true
     
-    print "[DetailScene] After visibility change:"
-    print "[DetailScene]   loadingGroup.visible: "; m.loadingGroup.visible
-    print "[DetailScene]   errorGroup.visible: "; m.errorGroup.visible
-    print "[DetailScene]   contentGroup.visible: "; m.contentGroup.visible
-    
-    ' Check Poster node
-    print "[DetailScene] Poster node status:"
-    print "[DetailScene]   largeImage valid: "; (m.largeImage <> invalid)
-    if m.largeImage <> invalid then
-        print "[DetailScene]   largeImage.uri: "; m.largeImage.uri
-        print "[DetailScene]   largeImage.loadStatus: "; m.largeImage.loadStatus
-        print "[DetailScene]   largeImage.visible: "; m.largeImage.visible
-        print "[DetailScene]   largeImage.opacity: "; m.largeImage.opacity
-        print "[DetailScene]   largeImage.width: "; m.largeImage.width
-        print "[DetailScene]   largeImage.height: "; m.largeImage.height
-    end if
-    
-    ' Stop spinner
     if m.loadingSpinner <> invalid then
         m.loadingSpinner.control = "stop"
     end if
     
-    print "[DetailScene] ========================================="
-    print "[DetailScene] CONTENT SHOULD NOW BE VISIBLE"
-    print "[DetailScene] ========================================="
+    print "[DetailScene] CONTENT VISIBLE"
 end sub
 
 
@@ -407,7 +390,6 @@ sub showError(message as String)
     m.loadingGroup.visible = false
     m.contentGroup.visible = false
     
-    ' Stop spinner
     if m.loadingSpinner <> invalid then
         m.loadingSpinner.control = "stop"
     end if
@@ -415,14 +397,13 @@ end sub
 
 
 ' ******************************************************
-' Format number with commas (e.g., 1234567 -> "1,234,567")
+' Format number with commas
 ' ******************************************************
 function FormatNumber(num as Integer) as String
     numStr = num.ToStr()
     result = ""
     count = 0
     
-    ' Process from right to left
     for i = numStr.Len() - 1 to 0 step -1
         if count = 3 then
             result = "," + result
@@ -444,12 +425,11 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
 
     print "[DetailScene] Key: "; key
 
-    ' Back button - return to main scene
     if key = "back" then
         print "[DetailScene] Back pressed - closing detail view"
         cleanup()
         m.top.closeRequested = true
-        return true  ' Consume the event
+        return true
     end if
 
     return false
@@ -462,14 +442,12 @@ end function
 sub cleanup()
     print "[DetailScene] Cleaning up..."
     
-    ' Stop and cleanup task if running
     if m.photoInfoTask <> invalid then
         m.photoInfoTask.control = "STOP"
         m.photoInfoTask.unobserveField("result")
         m.photoInfoTask = invalid
     end if
     
-    ' Cleanup ViewModel
     if m.viewModel <> invalid then
         m.viewModel.cleanup()
         m.viewModel = invalid
