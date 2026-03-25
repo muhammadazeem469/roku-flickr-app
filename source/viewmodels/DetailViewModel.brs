@@ -35,6 +35,7 @@ function CreateDetailViewModel(imageModel as Object) as Object
         ' Methods
         init: DetailViewModel_init
         loadExtendedInfo: DetailViewModel_loadExtendedInfo
+        handlePhotoInfoResult: DetailViewModel_handlePhotoInfoResult
         parseImageInfo: DetailViewModel_parseImageInfo
         handleError: DetailViewModel_handleError
         cleanup: DetailViewModel_cleanup
@@ -62,10 +63,20 @@ m.stateManager.setError(m, "Invalid image data")
 end function
 
 
-' Load extended information from Flickr API
-function DetailViewModel_loadExtendedInfo() as Void
-    
-    m.infoLoader.loadPhotoInfo(m, m.image.id)
+' Create and return a configured PhotoInfoTask for the detail screen.
+' The View must observe task.result, call task.control = "RUN",
+' then forward the result via handlePhotoInfoResult().
+' Returns invalid when no task is needed (mock ID) or creation fails.
+function DetailViewModel_loadExtendedInfo() as Object
+    return m.infoLoader.createTask(m)
+end function
+
+
+' Forward a completed PhotoInfoTask result to InfoLoader for interpretation.
+' After this call the View checks m.viewModel.hasError to decide which
+' UI update path to take.
+function DetailViewModel_handlePhotoInfoResult(result as Object) as Void
+    m.infoLoader.handleResult(m, result)
 end function
 
 

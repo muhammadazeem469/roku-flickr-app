@@ -29,6 +29,7 @@
     <script type="text/brightscript" uri="pkg:/source/models/ImageMapper.brs" />
     
     <!-- Utils -->
+    <script type="text/brightscript" uri="pkg:/source/utils/TypeUtils.brs" />
     <script type="text/brightscript" uri="pkg:/source/utils/ApiHelper.brs" />
     <script type="text/brightscript" uri="pkg:/source/utils/ImageUrlBuilder.brs" />
     <script type="text/brightscript" uri="pkg:/source/utils/ImageUrlBuilder_Extended.brs" />
@@ -40,6 +41,7 @@
     <script type="text/brightscript" uri="pkg:/source/network/NetworkValidator.brs" />
 
     <!-- Services - AFTER ImageMapper since ResponseParser uses it -->
+    <script type="text/brightscript" uri="pkg:/source/utils/ResponseBuilder.brs" />
     <script type="text/brightscript" uri="pkg:/source/services/FlickrService_ResponseParser.brs" />
     <script type="text/brightscript" uri="pkg:/source/services/FlickrService_ApiMethods.brs" />
     <script type="text/brightscript" uri="pkg:/source/services/FlickrService.brs" />

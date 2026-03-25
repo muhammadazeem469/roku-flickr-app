@@ -37,18 +37,3 @@ function NetworkUtils_request(url as String, options as Object) as Object
     
     return response
 end function
-
-
-' Quick request without retry (for fast operations)
-' @param url - URL to request
-' @return Object - Response with parsed JSON
-function NetworkUtils_quickRequest(url as String) as Object
-    config = GetNetworkConfig()
-    response = HttpClient_makeRequest(url, config.SHORT_TIMEOUT)
-    
-    if response.success then
-        return JsonParser_parse(response)
-    end if
-    
-    return response
-end function

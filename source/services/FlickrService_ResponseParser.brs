@@ -6,17 +6,16 @@
 
 function FlickrService_ResponseParser() as Object
     return {
-        parsePhotosResponse: FlickrService_ResponseParser_parsePhotosResponse
-        extractPaginationInfo: FlickrService_ResponseParser_extractPaginationInfo
+        parsePhotosResponse:    FlickrService_ResponseParser_parsePhotosResponse
+        extractPaginationInfo:  FlickrService_ResponseParser_extractPaginationInfo
     }
 end function
 
 
 ' Parse photos response and convert to ImageModel array
 function FlickrService_ResponseParser_parsePhotosResponse(json as Object) as Object
-' Validate response structure
     if json = invalid then
-return FlickrService_createErrorResponse("Invalid JSON response")
+        return FlickrService_createErrorResponse("Invalid JSON response")
     end if
 
     ' -------------------------------------------------------
@@ -34,7 +33,7 @@ return FlickrService_createErrorResponse("Invalid JSON response")
     '   116 - Bad URL found          → errorType: API_ERROR
     ' -------------------------------------------------------
     if json.stat <> invalid and json.stat = "fail" then
-        errorMsg = "Couldn't load images. Please try again later."
+        errorMsg   = GetErrorMessages().API
         flickrCode = 0
 
         if json.message <> invalid and json.message <> "" then
@@ -50,11 +49,12 @@ return FlickrService_createErrorResponse("Invalid JSON response")
     end if
 
     if json.photos = invalid then
-return FlickrService_createErrorResponse("Invalid response structure")
+        return FlickrService_createErrorResponse("Invalid response structure")
     end if
 
+    paginationInfo = m.extractPaginationInfo(json.photos)
+
     if json.photos.photo = invalid then
-paginationInfo = m.extractPaginationInfo(json.photos)
         return {
             success:   true
             data:      []
@@ -66,18 +66,18 @@ paginationInfo = m.extractPaginationInfo(json.photos)
         }
     end if
 
-    ' Extract pagination info
-    paginationInfo = m.extractPaginationInfo(json.photos)
-
     ' Convert each photo to ImageModel using existing ImageMapper
     imageModels = []
     mapper = ImageMapper()
 
     for each photoJson in json.photos.photo
         imageModel = mapper.fromFlickrJSON(photoJson)
-        imageModels.Push(imageModel)
+        if imageModel <> invalid then
+            imageModels.Push(imageModel)
+        end if
     end for
-return {
+
+    return {
         success:   true
         data:      imageModels
         error:     ""
@@ -99,36 +99,9 @@ function FlickrService_ResponseParser_extractPaginationInfo(photosObj as Object)
         return { page: page, pages: pages, total: total }
     end if
 
-    ' Extract page number
-    if photosObj.page <> invalid then
-        if Type(photosObj.page) = "roString" or Type(photosObj.page) = "String" then
-            page = photosObj.page.ToInt()
-        else
-            page = photosObj.page
-        end if
-    end if
+    if photosObj.page  <> invalid then page  = SafeToInt(photosObj.page)
+    if photosObj.pages <> invalid then pages = SafeToInt(photosObj.pages)
+    if photosObj.total <> invalid then total = SafeToInt(photosObj.total)
 
-    ' Extract total pages
-    if photosObj.pages <> invalid then
-        if Type(photosObj.pages) = "roString" or Type(photosObj.pages) = "String" then
-            pages = photosObj.pages.ToInt()
-        else
-            pages = photosObj.pages
-        end if
-    end if
-
-    ' Extract total count
-    if photosObj.total <> invalid then
-        if Type(photosObj.total) = "roString" or Type(photosObj.total) = "String" then
-            total = photosObj.total.ToInt()
-        else
-            total = photosObj.total
-        end if
-    end if
-
-    return {
-        page:  page
-        pages: pages
-        total: total
-    }
+    return { page: page, pages: pages, total: total }
 end function

@@ -7,22 +7,23 @@
 
 function MainViewModel_CategoryLoader() as Object
     loader = {
+        ' Shared manager instances (created once, reused on every call)
+        imgManager: CategoryImageManager()
+        pagManager: CategoryPaginationManager()
+
         ' Public methods
         loadCategory:       MainViewModel_CategoryLoader_loadCategory
         refreshCategory:    MainViewModel_CategoryLoader_refreshCategory
         loadAllCategories:  MainViewModel_CategoryLoader_loadAllCategories
-        
+
         ' Methods that need scene context
-        loadCategoryWithTask:   MainViewModel_CategoryLoader_loadCategoryWithTask
-        
+        loadCategoryWithTask: MainViewModel_CategoryLoader_loadCategoryWithTask
+
         ' Private helper methods
-        parseApiResponse:   MainViewModel_CategoryLoader_parseApiResponse
-        handleApiError:     MainViewModel_CategoryLoader_handleApiError
-        
-        ' Legacy mock method (for fallback testing)
-        createMockImages:   MainViewModel_CategoryLoader_createMockImages
+        parseApiResponse: MainViewModel_CategoryLoader_parseApiResponse
+        handleApiError:   MainViewModel_CategoryLoader_handleApiError
     }
-    
+
     return loader
 end function
 
@@ -93,19 +94,31 @@ function MainViewModel_CategoryLoader_loadCategoryWithTask(viewModel as Object, 
     viewModel.categories[categoryIndex] = category
     viewModel.categoryDataChanged = not viewModel.categoryDataChanged
 
+    ' Debug simulation: intercept before creating the task
+    config = GetApiConfig()
+    msgs = GetErrorMessages()
+    if config.DEBUG_NETWORK_ERROR = true then
+        m.parseApiResponse(viewModel, categoryIndex, ResponseBuilder_error(msgs.NETWORK, "NETWORK"))
+        return invalid
+    end if
+    if config.DEBUG_EMPTY_RESULTS = true then
+        m.parseApiResponse(viewModel, categoryIndex, ResponseBuilder_error(msgs.EMPTY, "EMPTY"))
+        return invalid
+    end if
+
     ' Validate method and tags
     if category.method = "flickr.photos.search" then
         if category.tags = invalid or category.tags = "" then
-MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, "Couldn't load images. Please try again later.", "API_ERROR")
+            MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, GetErrorMessages().API, "API_ERROR")
             return invalid
         end if
     end if
 
     ' Create Task node
     task = scene.createChild("CategoryLoadTask")
-    
+
     if task = invalid then
-MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, "Couldn't load images. Please try again later.", "API_ERROR")
+        MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, GetErrorMessages().API, "API_ERROR")
         return invalid
     end if
     
@@ -131,10 +144,9 @@ function MainViewModel_CategoryLoader_parseApiResponse(viewModel as Object, cate
 ' Check if API call was successful
     if not result.success then
 
-        ' FG-022: Use the errorType set by CategoryLoadTask to pick
-        ' the correct user-facing message per the ticket spec.
         errorType = ""
         if result.errorType <> invalid then errorType = result.errorType
+        if errorType = "" then errorType = "API_ERROR"
 
         userMessage = MainViewModel_CategoryLoader_getUserMessage(errorType, result.error)
         MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, userMessage, errorType)
@@ -142,14 +154,14 @@ function MainViewModel_CategoryLoader_parseApiResponse(viewModel as Object, cate
     end if
 
     ' Validate data array
+    msgs = GetErrorMessages()
     if result.data = invalid then
-MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, "Couldn't load images. Please try again later.", "API_ERROR")
+        MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, msgs.API, "API_ERROR")
         return
     end if
 
-    photoCount = result.data.Count()
-if photoCount = 0 then
-MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, "No images found in this category.", "EMPTY")
+    if result.data.Count() = 0 then
+        MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, msgs.EMPTY, "EMPTY")
         return
     end if
     
@@ -158,20 +170,14 @@ MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, "No images
 images = []
     
     for each imageModel in result.data
-        ' Validate image has required fields
         if imageModel.id <> "" and imageModel.url_thumbnail <> "" then
             images.Push(imageModel)
-        else
-end if
+        end if
     end for
-' Update category with images
-    imgManager = CategoryImageManager()
-    category = imgManager.addImages(category, images)
-    
-    ' Update pagination info
-    pagManager = CategoryPaginationManager()
+    category = m.imgManager.addImages(category, images)
+
     if result.pages <> invalid and result.pages > 0 then
-        category = pagManager.setTotalPages(category, result.pages)
+        category = m.pagManager.setTotalPages(category, result.pages)
     end if
     
     ' Clear loading state and mark as loaded
@@ -214,20 +220,12 @@ end function
 ' Falls back to the raw message when type is unrecognised.
 ' ******************************************************
 function MainViewModel_CategoryLoader_getUserMessage(errorType as String, rawMessage as String) as String
-    if errorType = "NETWORK" then
-        return "Unable to connect. Check your internet connection."
-    else if errorType = "EMPTY" then
-        return "No images found in this category."
-    else if errorType = "API_ERROR" then
-        return "Couldn't load images. Please try again later."
-    end if
-
-    ' Unknown type — surface the raw message so nothing is silently swallowed
-    if rawMessage <> invalid and rawMessage <> "" then
-        return rawMessage
-    end if
-
-    return "Couldn't load images. Please try again later."
+    msgs = GetErrorMessages()
+    if errorType = "NETWORK"   then return msgs.NETWORK
+    if errorType = "EMPTY"     then return msgs.EMPTY
+    if errorType = "API_ERROR" then return msgs.API
+    if rawMessage <> invalid and rawMessage <> "" then return rawMessage
+    return msgs.API
 end function
 
 
@@ -242,12 +240,10 @@ return
     category = viewModel.categories[categoryIndex]
 
     ' Clear existing images
-    imgManager = CategoryImageManager()
-    category = imgManager.clearImages(category)
+    category = m.imgManager.clearImages(category)
 
     ' Reset pagination
-    pagManager = CategoryPaginationManager()
-    category = pagManager.resetPage(category)
+    category = m.pagManager.resetPage(category)
     
     ' Clear error state
     category = category.clearError()
@@ -259,36 +255,3 @@ return
 end function
 
 
-' ******************************************************
-' LEGACY: Create mock images for testing
-' Keep for fallback/testing purposes
-' ******************************************************
-function MainViewModel_CategoryLoader_createMockImages(categoryName as String, count as Integer) as Object
-    images = []
-
-    for i = 1 to count
-        image = CreateImageModel()
-        image.id          = "mock_" + categoryName + "_" + i.ToStr()
-        image.title       = categoryName + " Image " + i.ToStr()
-        image.description = "This is a sample description for testing DetailScene layout. Lorem ipsum dolor sit amet, consectetur adipiscing elit."
-        image.owner       = "Sample Photographer " + i.ToStr()
-        image.ownerId     = "mock_owner_" + i.ToStr()
-
-        ' Use picsum.photos for actual working placeholder images
-        baseId = (Asc(categoryName.Left(1)) * 100 + i) Mod 1000
-        image.url_thumbnail = "https://picsum.photos/150/150?random=" + baseId.ToStr()
-        image.url_small     = "https://picsum.photos/320/240?random=" + baseId.ToStr()
-        image.url_medium    = "https://picsum.photos/640/480?random=" + baseId.ToStr()
-        image.url_large     = "https://picsum.photos/1024/768?random=" + baseId.ToStr()
-
-        image.width  = 1024
-        image.height = 768
-        image.tags   = [LCase(categoryName), "sample", "test"]
-        image.views  = 100 * i
-        image.datePosted = "1609459200"  ' Jan 1, 2021
-
-        images.Push(image)
-    end for
-
-    return images
-end function

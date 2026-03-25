@@ -26,7 +26,7 @@ Service
 FlickrService, FlickrService_ApiMethods, FlickrService_ResponseParser
 All Flickr API interaction and JSON-to-model conversion
 Model
-ImageModel, CategoryModel, CategoryStateManager, CategoryImageManager, CategoryPaginationManager
+ImageModel, CategoryModel, CategoryImageManager, CategoryPaginationManager
 Pure data objects with no dependencies
 Config
 AppConfig, CategoryConfig, ImageConfig, NetworkConfig, UIConfig
@@ -44,7 +44,7 @@ URL construction, SceneGraph node conversion helpers
 2.2 Thread Safety — The Most Critical Design Decision
 Roku strictly forbids HTTP requests on the render thread. Every network call must run on a Task thread node. This is the single most important architectural constraint and drives several design decisions:
 • CategoryLoadTask — fetches all images for one category. MainScene creates and observes one task at a time in a sequential queue.
-• PhotoInfoTask — fetches extended metadata for a selected image. DetailScene creates this task after the basic image is already displayed.
+• PhotoInfoTask — fetches extended metadata for a selected image. DetailViewModel_InfoLoader.createTask() constructs and configures the task; DetailScene receives it back, observes the result field, and calls task.control = "RUN". Result interpretation is delegated back to DetailViewModel_InfoLoader.handleResult(), keeping all business logic out of the View.
 • All HTTP I/O lives in FlickrService_ApiMethods and HttpClient, which are only ever called from within Task threads.
 • Results cross the thread boundary by writing to an output field (result) on the Task node. The render thread observes this field via observeField.
 
@@ -116,7 +116,7 @@ CategoryModel is intentionally separate from SceneGraph. Keeping it as a plain a
 A facade that wraps three subordinate modules:
 • FlickrService_ApiMethods — one function per Flickr method: getInterestingImages(), searchImagesByTag(), getRecentImages(), getImageInfo(). Each builds a URL via ApiHelper, calls HttpClient_makeRequest(), and passes the raw response to the ResponseParser.
 • FlickrService_ResponseParser — detects Flickr's stat:"fail" error body (Flickr always returns HTTP 200, even for invalid keys), extracts pagination info, and converts the photos array to ImageModel objects via ImageMapper.
-• ImageMapper — field-by-field mapping from Flickr JSON to ImageModel. Prefers direct URL fields returned by the extras parameter (url_q, url_n, url_z, url_b) and falls back to constructing static CDN URLs when extras are absent.
+• ImageMapper — field-by-field mapping from Flickr JSON to ImageModel. Prefers direct URL fields returned by the extras parameter and falls back to constructing static CDN URLs when extras are absent. The four size suffixes (thumbnail/small/medium/large) are read from GetImageConfig().SIZES rather than hardcoded, so changing a size preference in ImageConfig.brs propagates to both the extras request and the URL mapping automatically.
 
 4.3 Error Handling — Three-Tier Classification
 A deliberate decision was made to classify all errors into exactly three user-visible types so that error messages are consistent and actionable:
@@ -137,7 +137,7 @@ stat:fail body, HTTP transport failure, JSON parse error, or unknown method
 Couldn't load images. Please try again later.
 Yes
 
-The errorType is propagated from CategoryLoadTask → MainViewModel_CategoryLoader.parseApiResponse → CategoryModel.errorType → showErrorRow() → sentinel ContentNode.errorType, so the UI can render the correct icon and retry hint without any conditional string matching at the View layer.
+The errorType is propagated from CategoryLoadTask → MainViewModel_CategoryLoader.parseApiResponse → CategoryModel.errorType → showErrorRow() → sentinel ContentNode.errorType, so the UI can render the correct icon and retry hint without any conditional string matching at the View layer. All three user-facing message strings are defined once in GetErrorMessages() inside AppConfig.brs and referenced by key (NETWORK / EMPTY / API) everywhere else — there are no duplicate string literals in the codebase.
 
 4.4 Loading State UX
 Two separate loading mechanisms work in concert:
@@ -255,7 +255,7 @@ ViewModels and Models use BrightScript associative arrays rather than ContentNod
 All configuration lives in functions (GetApiConfig(), GetNetworkConfig(), etc.) that return fresh assoc arrays. This follows BrightScript convention and allows config values to be computed at call time (e.g. swapping the API key when DEBUG_BAD_API_KEY is true) rather than being static globals that are hard to mock in tests.
 
 7.5 extras Parameter for Image URLs
-The extras parameter (url_q,url_n,url_z,url_b,description,owner_name,tags,views,date_upload) is passed to all list API calls. This returns pre-built CDN URLs directly in the search/list response, eliminating a separate flickr.photos.getSizes call per image and reducing API round-trips from O(n+1) to O(1) per category.
+The extras parameter (url_q,url_n,url_z,url_b,description,owner_name,tags,views,date_upload) is passed to all list API calls. This returns pre-built CDN URLs directly in the search/list response, eliminating a separate flickr.photos.getSizes call per image and reducing API round-trips from O(n+1) to O(1) per category. The four URL size suffixes are sourced from GetImageConfig().SIZES so the extras string and the ImageMapper URL fields always stay in sync.
 
 8. Trade-offs, Omissions & Future Improvements
    8.1 What Was Left Out
@@ -281,7 +281,7 @@ The extras parameter (url_q,url_n,url_z,url_b,description,owner_name,tags,views,
 8.2 Known Trade-offs
 • Peer verification is disabled on roUrlTransfer — acceptable for a demo channel but should be replaced with proper certificate pinning in a production channel.
 • The channel loads 20 images per category (perPage=20). A higher value would show more content but slow initial load; lower values would feel sparse.
-• DetailViewModel_InfoLoader makes a synchronous HTTP call (FlickrService_GetPhotoInfo). This is safe only because it is called from within PhotoInfoTask which runs on the task thread, not the render thread. The code comment explains this but the coupling is fragile if the call site changes.
+• DetailViewModel_InfoLoader owns the full task lifecycle for photo info: createTask() constructs the PhotoInfoTask node (or returns invalid for mock IDs), and handleResult() interprets the result. DetailScene never inspects the raw API response — it only checks viewModel.hasError after delegating. This eliminates the previous fragile coupling where the View was making task-creation and success/failure decisions that belong in the ViewModel.
 • ErrorRowItem.xml defines a custom RowList item component. Due to RowList's content model, the row title approach (updating rowNode.title) is simpler and more compatible across firmware versions, so ErrorRowItem is defined but the row-title approach is used as the primary error display.
 
 8.3 Scalability Considerations
@@ -305,7 +305,7 @@ The challenge spec specifically asks: "will this have to be rebuilt when pulling
    AppConfig, CategoryConfig, ImageConfig, NetworkConfig, UIConfig
    All constants and configuration
    source/models/
-   ImageModel, CategoryModel, CategoryStateManager, CategoryImageManager, CategoryPaginationManager, ImageMapper
+   ImageModel, CategoryModel, CategoryImageManager, CategoryPaginationManager, ImageMapper
    Pure data + mutation helpers
    source/services/
    FlickrService, FlickrService_ApiMethods, FlickrService_ResponseParser
@@ -317,8 +317,8 @@ The challenge spec specifically asks: "will this have to be rebuilt when pulling
    HttpClient, JsonParser, NetworkValidator, ErrorHandler, RetryManager, NetworkUtils
    Reusable HTTP layer
    source/utils/
-   ApiHelper, ImageUrlBuilder, ImageUrlBuilder_Extended, ContentNodeConverter, CategoryContentNodeConverter, NetworkUtils
-   URL building and node conversion
+   ApiHelper, ImageUrlBuilder, ImageUrlBuilder_Extended, ContentNodeConverter, CategoryContentNodeConverter, NetworkUtils, TypeUtils, FormatUtils, ResponseBuilder
+   URL building, node conversion, and shared utilities (type coercion, number/date formatting, standardised response construction)
    source/validators/
    ImageValidators, CategoryValidator
    Input validation
