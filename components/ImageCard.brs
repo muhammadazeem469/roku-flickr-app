@@ -30,6 +30,7 @@ sub init()
     ' Initialize state
     m.imageLoaded = false
     m.hasError    = false
+    m.fadeAnim    = invalid
 
     ' Apply initial size
     updateCardSize()
@@ -104,21 +105,53 @@ end sub
 ' Show loading state
 ' ******************************************************
 sub showLoading()
+    ' Cancel any in-progress fade so the next load starts clean
+    if m.fadeAnim <> invalid then
+        m.fadeAnim.control = "stop"
+        m.top.removeChild(m.fadeAnim)
+        m.fadeAnim = invalid
+    end if
+
+    m.thumbnail.opacity    = 1.0   ' reset for next fade-in
+    m.thumbnail.visible    = false
     m.placeholder.visible  = true
     m.loadingLabel.visible = true
     m.errorLabel.visible   = false
-    m.thumbnail.visible    = false
 end sub
 
 
 ' ******************************************************
-' Show image (hide loading/error)
+' Show image — fades thumbnail in over 0.3s so the grey
+' placeholder is always visible during the transition,
+' even when the image loads instantly from Roku's cache.
 ' ******************************************************
 sub showImage()
-    m.placeholder.visible  = false
     m.loadingLabel.visible = false
     m.errorLabel.visible   = false
-    m.thumbnail.visible    = true
+
+    ' Start transparent, render on top of placeholder, then fade in.
+    ' Placeholder stays visible underneath until thumbnail is fully opaque.
+    m.thumbnail.opacity = 0.0
+    m.thumbnail.visible = true
+
+    ' Cancel any previous fade before starting a new one
+    if m.fadeAnim <> invalid then
+        m.fadeAnim.control = "stop"
+        m.top.removeChild(m.fadeAnim)
+        m.fadeAnim = invalid
+    end if
+
+    anim              = m.top.createChild("Animation")
+    anim.duration     = 0.3
+    anim.easeFunction = "linear"
+
+    interp               = anim.createChild("FloatFieldInterpolator")
+    interp.key           = [0.0, 1.0]
+    interp.keyValue      = [0.0, 1.0]
+    interp.fieldToInterp = "thumbnail.opacity"
+
+    m.fadeAnim   = anim
+    anim.control = "start"
 end sub
 
 
@@ -126,11 +159,19 @@ end sub
 ' Show error state
 ' ******************************************************
 sub showError()
+    ' Cancel any in-progress fade
+    if m.fadeAnim <> invalid then
+        m.fadeAnim.control = "stop"
+        m.top.removeChild(m.fadeAnim)
+        m.fadeAnim = invalid
+    end if
+
+    m.thumbnail.opacity    = 1.0
+    m.thumbnail.visible    = false
     m.placeholder.visible  = true
-    m.placeholder.color    = "0x555555"   ' UIConfig.COLORS.SECONDARY
+    m.placeholder.color    = "0x555555"
     m.loadingLabel.visible = false
     m.errorLabel.visible   = true
-    m.thumbnail.visible    = false
 end sub
 
 
