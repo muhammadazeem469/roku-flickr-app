@@ -11,7 +11,7 @@ A Roku SceneGraph channel that displays Flickr photos in a multi-row swimlane ga
 Make sure you have [Git](https://git-scm.com/) installed, then run:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/flickr-gallery-roku.git
+git clone https://github.com/muhammadazeem469/roku-flickr-app.git
 cd flickr-gallery-roku
 ```
 
