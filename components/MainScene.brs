@@ -369,7 +369,7 @@ sub showErrorRow(categoryIndex as Integer)
 
     message = category.errorMessage
     if message = invalid or message = "" then
-        message = "Couldn't load images. Please try again later."
+        message = GetErrorMessages().API
     end if
 
     canRetry = (errorType = "NETWORK" or errorType = "API_ERROR" or errorType = "")

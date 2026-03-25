@@ -14,5 +14,7 @@
         <field id="result" type="assocarray" />
     </interface>
 
+    <script type="text/brightscript" uri="pkg:/source/config/AppConfig.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/ResponseBuilder.brs" />
     <script type="text/brightscript" uri="pkg:/components/tasks/PhotoInfoTask.brs" />
 </component>

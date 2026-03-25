@@ -86,8 +86,7 @@ end function
 ' @param photoData - Photo data from API
 function DetailViewModel_InfoParser_parseUploadDate(viewModel as Object, photoData as Object) as Void
     if photoData.dates <> invalid and photoData.dates.posted <> invalid then
-        timestamp = photoData.dates.posted.ToInt()
-        viewModel.uploadDate = FormatUnixTimestamp(timestamp)
+        viewModel.uploadDate = FormatUnixTimestamp(SafeToInt(photoData.dates.posted))
     end if
 end function
 
@@ -122,24 +121,4 @@ function DetailViewModel_InfoParser_parseTags(viewModel as Object, photoData as 
         end for
         viewModel.image.tags = tagArray
     end if
-end function
-
-
-' Helper function to format Unix timestamp to readable date
-' @param timestamp - Unix timestamp (seconds since epoch)
-' @return Formatted date string
-function FormatUnixTimestamp(timestamp as Integer) as String
-    ' Create date object from timestamp
-    dateObj = CreateObject("roDateTime")
-    dateObj.FromSeconds(timestamp)
-    
-    ' Format as readable string
-    ' Example output: "March 15, 2024"
-    months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-    
-    month = months[dateObj.GetMonth() - 1]
-    day = dateObj.GetDayOfMonth()
-    year = dateObj.GetYear()
-    
-    return month + " " + day.ToStr() + ", " + year.ToStr()
 end function

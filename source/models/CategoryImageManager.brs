@@ -61,8 +61,7 @@ return category
         if validator.isValid(imageModel) then
             category.images.Push(imageModel)
             addedCount = addedCount + 1
-        else
-end if
+        end if
     end for
     
     category.totalImages = category.images.Count()
@@ -76,11 +75,9 @@ end function
 ' @param category - CategoryModel object
 ' @return Updated CategoryModel
 function CategoryImageManager_clearImages(category as Object) as Object
-    previousCount = category.images.Count()
-    
     category.images = []
     category.totalImages = 0
-    
+
     return category
 end function
 

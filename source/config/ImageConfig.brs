@@ -24,18 +24,3 @@ function GetImageConfig() as Object
     }
 end function
 
-' Build image URL from photo object
-function BuildImageURL(photo as Object, size as String) as String
-    ' Flickr image URL format:
-    ' https://live.staticflickr.com/{server-id}/{id}_{secret}_{size}.jpg
-    
-    if photo = invalid then return ""
-    
-    url = "https://live.staticflickr.com/"
-    url = url + photo.server + "/"
-    url = url + photo.id + "_"
-    url = url + photo.secret + "_"
-    url = url + size + ".jpg"
-    
-    return url
-end function

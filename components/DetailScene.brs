@@ -152,37 +152,26 @@ end sub
 ' Load extended information from API
 ' ******************************************************
 sub loadExtendedInfo()
-' *** TESTING OVERRIDE - CHANGE THIS TO TEST DIFFERENT SCENARIOS ***
-    ' Uncomment ONE of these lines to test different cases:
-    ' m.viewModel.image.id = "test_success"        ' All fields present
-    ' m.viewModel.image.id = "test_minimal"        ' Missing optional fields
-    ' m.viewModel.image.id = "test_notfound"       ' Photo not found error
-    ' m.viewModel.image.id = "test_network_error"  ' Network error
-    ' m.viewModel.image.id = "test_extreme"        ' Extreme values
+    ' *** TESTING OVERRIDE - uncomment ONE line to test different scenarios ***
+    ' m.viewModel.image.id = "test_success"       ' All fields present
+    ' m.viewModel.image.id = "test_minimal"       ' Missing optional fields
+    ' m.viewModel.image.id = "test_notfound"      ' Photo not found error
+    ' m.viewModel.image.id = "test_network_error" ' Network error
+    ' m.viewModel.image.id = "test_extreme"       ' Extreme values
     ' *** END TESTING OVERRIDE ***
-    
-    ' SKIP PhotoInfoTask for mock data
-    if m.viewModel.image.id.Left(5) = "mock_" then
-updateExtendedInfoOnError()
-        return
-    end if
-    
-    ' STEP 5: Show loading state for extended metadata
-' Create task to load photo info
-    m.photoInfoTask = CreateObject("roSGNode", "PhotoInfoTask")
-    
+
+    ' Ask the ViewModel to create and configure the task.
+    ' InfoLoader handles mock-ID skipping and creation errors internally.
+    m.photoInfoTask = m.viewModel.loadExtendedInfo()
+
     if m.photoInfoTask = invalid then
-m.viewModel.handleError("Failed to create API task")
+        ' No task: either a mock ID (expected) or a creation failure
+        ' (ViewModel already set its error state in the latter case).
         updateExtendedInfoOnError()
         return
     end if
-    
-    ' Set photo ID
-    m.photoInfoTask.photoId = m.viewModel.image.id
-    
-    ' Observe result
+
     m.photoInfoTask.observeField("result", "onPhotoInfoLoaded")
-' Start task
     m.photoInfoTask.control = "RUN"
 end sub
 
@@ -191,28 +180,18 @@ end sub
 ' Handle photo info loaded from API
 ' ******************************************************
 sub onPhotoInfoLoaded()
-result = m.photoInfoTask.result
-    
-    if result = invalid then
-m.viewModel.handleError("Invalid API response")
+    result = m.photoInfoTask.result
+
+    ' Delegate all result interpretation to the ViewModel.
+    ' After this call, m.viewModel.hasError reflects success or failure.
+    m.viewModel.handlePhotoInfoResult(result)
+
+    if m.viewModel.hasError then
         updateExtendedInfoOnError()
-        return
+    else
+        updateExtendedInfo()
     end if
-    
-    ' STEP 6 & 7: Process API response
-    if result.success then
-' Parse the photo data using ViewModel
-        m.viewModel.parseImageInfo(result.data)
-        
-        ' STEP 7: Update UI with extended info
-updateExtendedInfo()
-else
-        ' STEP 8: Handle error
-m.viewModel.handleError(result.error)
-        updateExtendedInfoOnError()
-end if
-    
-    ' Clean up task
+
     m.photoInfoTask.unobserveField("result")
     m.photoInfoTask = invalid
 end sub
@@ -311,27 +290,6 @@ sub showError(message as String)
         m.loadingSpinner.control = "stop"
     end if
 end sub
-
-
-' ******************************************************
-' Format number with commas
-' ******************************************************
-function FormatNumber(num as Integer) as String
-    numStr = num.ToStr()
-    result = ""
-    count = 0
-    
-    for i = numStr.Len() - 1 to 0 step -1
-        if count = 3 then
-            result = "," + result
-            count = 0
-        end if
-        result = numStr.Mid(i, 1) + result
-        count = count + 1
-    end for
-    
-    return result
-end function
 
 
 ' ******************************************************

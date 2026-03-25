@@ -222,6 +222,8 @@
     <script type="text/brightscript" uri="pkg:/source/config/ImageConfig.brs" />
 
     <!-- Network/Utils -->
+    <script type="text/brightscript" uri="pkg:/source/utils/TypeUtils.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/FormatUtils.brs" />
     <script type="text/brightscript" uri="pkg:/source/utils/NetworkUtils.brs" />
     <script type="text/brightscript" uri="pkg:/source/utils/ImageUrlBuilder.brs" />
     <script type="text/brightscript" uri="pkg:/source/utils/ImageUrlBuilder_Extended.brs" />
@@ -239,6 +241,7 @@
     <script type="text/brightscript" uri="pkg:/source/models/ImageMapper.brs" />
 
     <!-- Services -->
+    <script type="text/brightscript" uri="pkg:/source/utils/ResponseBuilder.brs" />
     <script type="text/brightscript" uri="pkg:/source/services/FlickrService_ResponseParser.brs" />
     <script type="text/brightscript" uri="pkg:/source/services/FlickrService_ApiMethods.brs" />
     <script type="text/brightscript" uri="pkg:/source/services/FlickrService.brs" />

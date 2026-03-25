@@ -55,16 +55,12 @@ end function
 
 function CategoryModel_setLoading(state as Boolean) as Object
     m.isLoading = state
-    if state then
-    end if
     return m
 end function
 
 
 function CategoryModel_setLoaded(state as Boolean) as Object
     m.isLoaded = state
-    if state then
-end if
     return m
 end function
 

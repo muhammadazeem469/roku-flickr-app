@@ -200,6 +200,8 @@
     <script type="text/brightscript" uri="pkg:/source/Validators/CategoryValidator.brs" />
 
     <!-- Utils -->
+    <script type="text/brightscript" uri="pkg:/source/utils/TypeUtils.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/FormatUtils.brs" />
     <script type="text/brightscript" uri="pkg:/source/utils/ContentNodeConverter.brs" />
     <script type="text/brightscript" uri="pkg:/source/utils/CategoryContentNodeConverter.brs" />
     <script type="text/brightscript" uri="pkg:/source/utils/ImageUrlBuilder.brs" />
@@ -217,7 +219,6 @@
     <!-- Models -->
     <script type="text/brightscript" uri="pkg:/source/models/ImageModel.brs" />
     <script type="text/brightscript" uri="pkg:/source/models/CategoryModel.brs" />
-    <script type="text/brightscript" uri="pkg:/source/models/CategoryStateManager.brs" />
     <script type="text/brightscript" uri="pkg:/source/models/CategoryImageManager.brs" />
     <script type="text/brightscript" uri="pkg:/source/models/CategoryPaginationManager.brs" />
     <script type="text/brightscript" uri="pkg:/source/models/ImageMapper.brs" />
@@ -230,6 +231,7 @@
     <script type="text/brightscript" uri="pkg:/source/config/UIConfig.brs" />
 
     <!-- Services -->
+    <script type="text/brightscript" uri="pkg:/source/utils/ResponseBuilder.brs" />
     <script type="text/brightscript" uri="pkg:/source/services/FlickrService_ResponseParser.brs" />
     <script type="text/brightscript" uri="pkg:/source/services/FlickrService_ApiMethods.brs" />
     <script type="text/brightscript" uri="pkg:/source/services/FlickrService.brs" />
@@ -241,5 +243,4 @@
 
     <!-- Scene logic -->
     <script type="text/brightscript" uri="pkg:/components/MainScene.brs" />
-    <script type="text/brightscript" uri="pkg:/source/tests/TestMainViewModel_CategoryLoading.brs" />
 </component>

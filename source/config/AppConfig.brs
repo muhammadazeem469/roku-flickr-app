@@ -36,9 +36,23 @@ function GetApiConfig() as Object
         APP_NAME: "Flickr Gallery"
         APP_VERSION: "1.0.0"
 
+        ' Pagination defaults
+        DEFAULT_PAGE:     1
+        DEFAULT_PER_PAGE: 20
+
         ' Debug flags — read by CategoryLoadTask
         DEBUG_BAD_API_KEY:   DEBUG_BAD_API_KEY
         DEBUG_NETWORK_ERROR: DEBUG_NETWORK_ERROR
         DEBUG_EMPTY_RESULTS: DEBUG_EMPTY_RESULTS
+    }
+end function
+
+
+' User-facing error messages (single source of truth)
+function GetErrorMessages() as Object
+    return {
+        NETWORK: "Unable to connect. Check your internet connection."
+        EMPTY:   "No images found in this category."
+        API:     "Couldn't load images. Please try again later."
     }
 end function

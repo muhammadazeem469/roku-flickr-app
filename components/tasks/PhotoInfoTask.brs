@@ -11,105 +11,74 @@ end sub
 
 ' Load photo information from Flickr API
 sub loadPhotoInfo()
-    
+
     photoId = m.top.photoId
-    
+
     if photoId = invalid or photoId = "" then
-result = {}
-        result.success = false
-        result.error = "Invalid photo ID"
-        result.data = invalid
-        m.top.result = result
+        m.top.result = ResponseBuilder_error("Invalid photo ID")
         return
     end if
-    
+
     ' =====================================================
     ' TESTING MODE - Change this to test different scenarios
     ' =====================================================
     USE_MOCK_DATA = false  ' ← SET TO true FOR TESTING, false FOR REAL API
-    
+
     if USE_MOCK_DATA then
-' Get mock response based on photo ID
-        mockResult = getMockResponse(photoId)
-        m.top.result = mockResult
+        m.top.result = getMockResponse(photoId)
         return
     end if
     ' =====================================================
-    
+
     ' Real API call (only runs if USE_MOCK_DATA = false)
-    apiKey = "452b3b7a5d806dcd110842e6649c604d"
-    url = "https://api.flickr.com/services/rest/"
+    apiKey = GetApiConfig().API_KEY
+    url = GetApiConfig().BASE_URL
     url = url + "?method=flickr.photos.getInfo"
     url = url + "&api_key=" + apiKey
     url = url + "&photo_id=" + photoId
     url = url + "&format=json"
     url = url + "&nojsoncallback=1"
-    
+
     request = CreateObject("roUrlTransfer")
-    
+
     if request = invalid then
-result = {}
-        result.success = false
-        result.error = "Failed to create HTTP request"
-        result.data = invalid
-        m.top.result = result
+        m.top.result = ResponseBuilder_error("Failed to create HTTP request")
         return
     end if
-    
+
     request.SetUrl(url)
     request.EnablePeerVerification(false)
     request.EnableHostVerification(false)
     request.SetCertificatesFile("common:/certs/ca-bundle.crt")
     request.InitClientCertificates()
-    
+
     response = request.GetToString()
-    
+
     if response = invalid or response = "" then
-result = {}
-        result.success = false
-        result.error = "Empty response from API"
-        result.data = invalid
-        m.top.result = result
+        m.top.result = ResponseBuilder_error("Empty response from API")
         return
     end if
-    
+
     json = ParseJson(response)
-    
+
     if json = invalid then
-result = {}
-        result.success = false
-        result.error = "Invalid JSON response"
-        result.data = invalid
-        m.top.result = result
+        m.top.result = ResponseBuilder_error("Invalid JSON response")
         return
     end if
-    
+
     if json.stat <> invalid and json.stat = "fail" then
         errorMsg = "API Error"
-        if json.message <> invalid then
-            errorMsg = json.message
-        end if
-        result = {}
-        result.success = false
-        result.error = errorMsg
-        result.data = invalid
-        m.top.result = result
+        if json.message <> invalid then errorMsg = json.message
+        m.top.result = ResponseBuilder_error(errorMsg, "API_ERROR")
         return
     end if
-    
+
     if json.photo = invalid then
-result = {}
-        result.success = false
-        result.error = "No photo data in response"
-        result.data = invalid
-        m.top.result = result
+        m.top.result = ResponseBuilder_error("No photo data in response")
         return
     end if
-result = {}
-    result.success = true
-    result.error = ""
-    result.data = json.photo
-    m.top.result = result
+
+    m.top.result = ResponseBuilder_success(json.photo)
 end sub
 
 
@@ -117,13 +86,10 @@ end sub
 ' MOCK DATA FOR TESTING
 ' ******************************************************
 function getMockResponse(photoId as String) as Object
-    
+
     ' TEST: Success with all fields
     if photoId = "test_success" or photoId = "mock_success" or photoId.Left(5) = "mock_" then
-result = {}
-        result.success = true
-        result.error = ""
-        result.data = {
+        return ResponseBuilder_success({
             id: photoId
             title: { _content: "Beautiful Sunset Over Mountains" }
             description: { _content: "This stunning photograph captures the golden hour as the sun sets behind snow-capped mountain peaks." }
@@ -138,16 +104,12 @@ result = {}
             }
             views: "15234"
             comments: { _content: "42" }
-        }
-        return result
+        })
     end if
-    
+
     ' TEST: Missing optional fields
     if photoId = "test_minimal" or photoId = "mock_minimal" then
-result = {}
-        result.success = true
-        result.error = ""
-        result.data = {
+        return ResponseBuilder_success({
             id: photoId
             title: { _content: "Untitled Photo" }
             description: { _content: "" }
@@ -158,34 +120,22 @@ result = {}
             dates: {
                 posted: "1704067200"
             }
-        }
-        return result
+        })
     end if
-    
+
     ' TEST: Photo not found error
     if photoId = "test_notfound" or photoId = "mock_error" then
-result = {}
-        result.success = false
-        result.error = "Photo not found"
-        result.data = invalid
-        return result
+        return ResponseBuilder_error("Photo not found")
     end if
-    
+
     ' TEST: Network error
     if photoId = "test_network_error" then
-result = {}
-        result.success = false
-        result.error = "Network timeout - Unable to connect to server"
-        result.data = invalid
-        return result
+        return ResponseBuilder_error("Network timeout - Unable to connect to server", "NETWORK")
     end if
-    
+
     ' TEST: Extreme values
     if photoId = "test_extreme" then
-result = {}
-        result.success = true
-        result.error = ""
-        result.data = {
+        return ResponseBuilder_success({
             id: photoId
             title: { _content: "A very long title that goes on and on and might break the UI if not handled properly" }
             description: { _content: "Very long description with special characters: é, ñ, 中文, emoji 🌄🏔️" }
@@ -200,15 +150,11 @@ result = {}
             }
             views: "999999999"
             comments: { _content: "12345" }
-        }
-        return result
+        })
     end if
-    
+
     ' DEFAULT: Normal success
-result = {}
-    result.success = true
-    result.error = ""
-    result.data = {
+    return ResponseBuilder_success({
         id: photoId
         title: { _content: "Sample Photo" }
         description: { _content: "Sample description for testing" }
@@ -223,6 +169,5 @@ result = {}
         }
         views: "1234"
         comments: { _content: "5" }
-    }
-    return result
+    })
 end function
