@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ******************************************************
+  ** DetailScene.xml
+  ** Detail view component for displaying a single image with metadata
+  ** Shows large image, title, description, and metadata
+  ** NOTE: This is a Group component, not a Scene!
+  ****************************************************** -->
+
+<component name="DetailScene" extends="Group">
+    <interface>
+        <!-- Input: ImageModel from MainScene -->
+        <field id="imageModel" type="assocarray" />
+
+        <!-- Output: Signal when user wants to go back -->
+        <field id="closeRequested" type="bool" alwaysNotify="true" />
+    </interface>
+
+    <children>
+        <!-- Full-screen overlay to capture all input -->
+        <Rectangle
+            id="overlay"
+            width="1920"
+            height="1080"
+            color="0x000000"
+            opacity="0.0"
+            focusable="true"
+        />
+
+        <!-- Background (on top of overlay) -->
+        <Rectangle
+            id="background"
+            width="1920"
+            height="1080"
+            color="0x000000"
+        />
+
+        <!-- Main Content Container (visible when loaded) -->
+        <Group id="contentGroup" visible="false">
+
+            <!-- Large Image Display (Left side) -->
+            <Poster
+                id="largeImage"
+                translation="[60, 100]"
+                width="1200"
+                height="720"
+                loadDisplayMode="scaleToFit"
+                failedBitmapUri=""
+            />
+
+            <!-- Metadata Panel (Right side) -->
+            <Rectangle
+                id="metadataPanel"
+                translation="[1300, 100]"
+                width="560"
+                height="920"
+                color="0x101010"
+            />
+
+            <!-- Title -->
+            <Label
+                id="titleLabel"
+                translation="[1330, 120]"
+                width="500"
+                height="0"
+                font="font:LargeBoldSystemFont"
+                color="0xFFFFFF"
+                wrap="true"
+                maxLines="3"
+                lineSpacing="-5"
+            />
+
+            <!-- Description Label Header -->
+            <Label
+                id="descriptionHeader"
+                translation="[1330, 240]"
+                text="Description"
+                font="font:MediumBoldSystemFont"
+                color="0xCCCCCC"
+            />
+
+            <!-- Description (scrollable if long) -->
+            <Label
+                id="descriptionLabel"
+                translation="[1330, 280]"
+                width="500"
+                height="200"
+                font="font:SmallSystemFont"
+                color="0xBBBBBB"
+                wrap="true"
+                lineSpacing="-2"
+            />
+
+            <!-- Metadata Section -->
+            <Label
+                id="metadataHeader"
+                translation="[1330, 500]"
+                text="Details"
+                font="font:MediumBoldSystemFont"
+                color="0xCCCCCC"
+            />
+
+            <!-- Dimensions -->
+            <Label
+                id="dimensionsLabel"
+                translation="[1330, 540]"
+                width="500"
+                font="font:SmallSystemFont"
+                color="0xBBBBBB"
+            />
+
+            <!-- File Size -->
+            <Label
+                id="fileSizeLabel"
+                translation="[1330, 575]"
+                width="500"
+                font="font:SmallSystemFont"
+                color="0xBBBBBB"
+            />
+
+            <!-- Owner -->
+            <Label
+                id="ownerLabel"
+                translation="[1330, 610]"
+                width="500"
+                font="font:SmallSystemFont"
+                color="0xBBBBBB"
+            />
+
+            <!-- Upload Date -->
+            <Label
+                id="dateLabel"
+                translation="[1330, 645]"
+                width="500"
+                font="font:SmallSystemFont"
+                color="0xBBBBBB"
+            />
+
+            <!-- Views -->
+            <Label
+                id="viewsLabel"
+                translation="[1330, 680]"
+                width="500"
+                font="font:SmallSystemFont"
+                color="0xBBBBBB"
+            />
+
+            <!-- Comments (if available) -->
+            <Label
+                id="commentsLabel"
+                translation="[1330, 715]"
+                width="500"
+                font="font:SmallSystemFont"
+                color="0xBBBBBB"
+                visible="false"
+            />
+
+            <!-- Back Button Hint -->
+            <Label
+                id="backHint"
+                translation="[1330, 950]"
+                text="Press BACK to return"
+                font="font:SmallSystemFont"
+                color="0x888888"
+            />
+        </Group>
+
+        <!-- Loading State -->
+        <Group id="loadingGroup" visible="true">
+            <BusySpinner
+                id="loadingSpinner"
+                translation="[910, 490]"
+                uri="pkg:/images/spinner.png"
+            />
+            <Label
+                id="loadingLabel"
+                translation="[960, 600]"
+                text="Loading image details..."
+                horizAlign="center"
+                font="font:MediumSystemFont"
+                color="0xCCCCCC"
+            />
+        </Group>
+
+        <!-- Error State -->
+        <Group id="errorGroup" visible="false">
+            <Label
+                id="errorLabel"
+                translation="[960, 500]"
+                width="1200"
+                height="100"
+                horizAlign="center"
+                vertAlign="center"
+                font="font:MediumSystemFont"
+                color="0xFF4444"
+                wrap="true"
+            />
+            <Label
+                id="errorHint"
+                translation="[960, 600]"
+                text="Press BACK to return"
+                horizAlign="center"
+                font="font:SmallSystemFont"
+                color="0x888888"
+            />
+        </Group>
+        <Rectangle
+            id="focusOverlay"
+            width="1920"
+            height="1080"
+            color="0x000000"
+            opacity="0.0"
+            focusable="true"
+        />
+    </children>
+
+    <!-- Script Dependencies -->
+
+    <!-- Config -->
+    <script type="text/brightscript" uri="pkg:/source/config/AppConfig.brs" />
+    <script type="text/brightscript" uri="pkg:/source/config/NetworkConfig.brs" />
+    <script type="text/brightscript" uri="pkg:/source/config/UIConfig.brs" />
+    <script type="text/brightscript" uri="pkg:/source/config/ImageConfig.brs" />
+
+    <!-- Network/Utils -->
+    <script type="text/brightscript" uri="pkg:/source/utils/TypeUtils.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/FormatUtils.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/NetworkUtils.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/ImageUrlBuilder.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/ImageUrlBuilder_Extended.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/ApiHelper.brs" />
+
+    <!-- Network Layer -->
+    <script type="text/brightscript" uri="pkg:/source/network/NetworkValidator.brs" />
+    <script type="text/brightscript" uri="pkg:/source/network/RetryManager.brs" />
+    <script type="text/brightscript" uri="pkg:/source/network/ErrorHandler.brs" />
+    <script type="text/brightscript" uri="pkg:/source/network/JsonParser.brs" />
+    <script type="text/brightscript" uri="pkg:/source/network/HttpClient.brs" />
+
+    <!-- Models -->
+    <script type="text/brightscript" uri="pkg:/source/models/ImageModel.brs" />
+    <script type="text/brightscript" uri="pkg:/source/models/ImageMapper.brs" />
+
+    <!-- Services -->
+    <script type="text/brightscript" uri="pkg:/source/utils/ResponseBuilder.brs" />
+    <script type="text/brightscript" uri="pkg:/source/services/FlickrService_ResponseParser.brs" />
+    <script type="text/brightscript" uri="pkg:/source/services/FlickrService_ApiMethods.brs" />
+    <script type="text/brightscript" uri="pkg:/source/services/FlickrService.brs" />
+
+    <!-- ViewModels -->
+    <script type="text/brightscript" uri="pkg:/source/viewmodels/DetailViewModel_InfoParser.brs" />
+    <script type="text/brightscript" uri="pkg:/source/viewmodels/DetailViewModel_InfoLoader.brs" />
+    <script type="text/brightscript" uri="pkg:/source/viewmodels/DetailViewModel_StateManager.brs" />
+    <script type="text/brightscript" uri="pkg:/source/viewmodels/DetailViewModel.brs" />
+
+    <!-- Scene Logic -->
+    <script type="text/brightscript" uri="pkg:/components/DetailScene.brs" />
+
+</component>

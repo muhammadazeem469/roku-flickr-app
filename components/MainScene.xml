@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ******************************************************
+  ** MainScene.xml
+  ** UPDATED: FG-021 - Loading States Implementation
+  **
+  ** SPINNER NOTE: BusySpinner requires a poster/skin asset
+  ** which is not guaranteed on all Roku firmware. Instead
+  ** we use a Poster + RotationAnimation which works reliably
+  ** on every device. The spinner image uses Roku's built-in
+  ** system overhang spinner: "pkg:/images/spinner.png"
+  ** If that asset is unavailable, a Rectangle pulse works
+  ** as fallback. See BRS for control logic.
+  ****************************************************** -->
+
+<component name="MainScene" extends="Scene">
+    <interface>
+        <field id="appBgColor"   type="string" />
+        <field id="appTextColor" type="string" />
+    </interface>
+
+    <children>
+        <!-- App Title -->
+        <Label
+            id="appTitle"
+            text="Flickr Gallery"
+            translation="[60, 30]"
+            width="1800"
+            height="50"
+            font="font:LargeBoldSystemFont"
+            color="0xFFFFFF"
+        />
+
+        <!-- ============================================
+             GLOBAL LOADING STATE (FG-021)
+             All nodes hidden via hideGlobalLoading() in BRS
+             once content is ready.
+             ============================================ -->
+
+        <!-- Dark backdrop covering full screen -->
+        <Rectangle
+            id="loadingBackdrop"
+            translation="[0, 0]"
+            width="1920"
+            height="1080"
+            color="0x111111FF"
+            visible="true"
+        />
+
+        <!-- Spinner: pure XML dots — no image asset needed.
+             12 Rectangle dots in a circle, fading from bright to dim.
+             Group centered on screen. FloatFieldInterpolator rotates
+             the group 0 to 2*PI (one full turn) per second. -->
+        <Group
+            id="spinnerGroup"
+            translation="[960, 540]"
+            visible="true"
+        >
+            <Rectangle
+                translation="[-4.0, -34.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFFFF"
+            />
+            <Rectangle
+                translation="[11.0, -30.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFFE9"
+            />
+            <Rectangle
+                translation="[22.0, -19.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFFD4"
+            />
+            <Rectangle
+                translation="[26.0, -4.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFFBF"
+            />
+            <Rectangle
+                translation="[22.0, 11.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFFAA"
+            />
+            <Rectangle
+                translation="[11.0, 22.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFF94"
+            />
+            <Rectangle
+                translation="[-4.0, 26.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFF7F"
+            />
+            <Rectangle
+                translation="[-19.0, 22.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFF6A"
+            />
+            <Rectangle
+                translation="[-30.0, 11.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFF55"
+            />
+            <Rectangle
+                translation="[-34.0, -4.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFF3F"
+            />
+            <Rectangle
+                translation="[-30.0, -19.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFF2A"
+            />
+            <Rectangle
+                translation="[-19.0, -30.0]"
+                width="8"
+                height="8"
+                color="0xFFFFFF15"
+            />
+        </Group>
+
+        <Animation
+            id="spinnerAnim"
+            duration="1.0"
+            easeFunction="linear"
+            repeat="true"
+        >
+            <FloatFieldInterpolator
+                id="spinnerRotInterp"
+                key="[0.0, 1.0]"
+                keyValue="[0.0, 6.283185]"
+                fieldToInterp="spinnerGroup.rotation"
+            />
+        </Animation>
+
+        <!-- Loading text below spinner -->
+        <Label
+            id="loadingProgress"
+            text="Loading..."
+            translation="[0, 600]"
+            width="1920"
+            height="50"
+            horizAlign="center"
+            vertAlign="center"
+            font="font:MediumSystemFont"
+            color="0xCCCCCCFF"
+            visible="true"
+        />
+
+        <!-- ============================================
+             GLOBAL ERROR STATE
+             ============================================ -->
+        <Label
+            id="globalError"
+            translation="[60, 540]"
+            width="1800"
+            height="60"
+            horizAlign="center"
+            vertAlign="center"
+            font="font:MediumSystemFont"
+            color="0xFF4444"
+            visible="false"
+        />
+
+        <!-- ============================================
+             CONTENT: RowList
+             Starts hidden, shown once first row loads
+             ============================================ -->
+        <RowList
+            id="categoryRowList"
+            translation="[10, 100]"
+            visible="false"
+            itemSize="[1800, 210]"
+            rowItemSize="[[280, 210]]"
+            itemSpacing="[0, 80]"
+            numRows="3"
+            rowItemSpacing="[[30, 0]]"
+            focusXOffset="[10]"
+            showRowLabel="[true]"
+            rowLabelOffset="[[0, 20]]"
+            drawFocusFeedback="true"
+            drawFocusFeedbackOnTop="false"
+            rowFocusAnimationStyle="floatingFocus"
+            vertFocusAnimationStyle="floatingFocus"
+        />
+    </children>
+
+    <!-- Validators -->
+    <script type="text/brightscript" uri="pkg:/source/Validators/ImageValidators.brs" />
+    <script type="text/brightscript" uri="pkg:/source/Validators/CategoryValidator.brs" />
+
+    <!-- Utils -->
+    <script type="text/brightscript" uri="pkg:/source/utils/TypeUtils.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/FormatUtils.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/ContentNodeConverter.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/CategoryContentNodeConverter.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/ImageUrlBuilder.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/ImageUrlBuilder_Extended.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/NetworkUtils.brs" />
+    <script type="text/brightscript" uri="pkg:/source/utils/ApiHelper.brs" />
+
+    <!-- Network Layer -->
+    <script type="text/brightscript" uri="pkg:/source/network/NetworkValidator.brs" />
+    <script type="text/brightscript" uri="pkg:/source/network/RetryManager.brs" />
+    <script type="text/brightscript" uri="pkg:/source/network/ErrorHandler.brs" />
+    <script type="text/brightscript" uri="pkg:/source/network/JsonParser.brs" />
+    <script type="text/brightscript" uri="pkg:/source/network/HttpClient.brs" />
+
+    <!-- Models -->
+    <script type="text/brightscript" uri="pkg:/source/models/ImageModel.brs" />
+    <script type="text/brightscript" uri="pkg:/source/models/CategoryModel.brs" />
+    <script type="text/brightscript" uri="pkg:/source/models/CategoryImageManager.brs" />
+    <script type="text/brightscript" uri="pkg:/source/models/CategoryPaginationManager.brs" />
+    <script type="text/brightscript" uri="pkg:/source/models/ImageMapper.brs" />
+
+    <!-- Config -->
+    <script type="text/brightscript" uri="pkg:/source/config/AppConfig.brs" />
+    <script type="text/brightscript" uri="pkg:/source/config/CategoryConfig.brs" />
+    <script type="text/brightscript" uri="pkg:/source/config/ImageConfig.brs" />
+    <script type="text/brightscript" uri="pkg:/source/config/NetworkConfig.brs" />
+    <script type="text/brightscript" uri="pkg:/source/config/UIConfig.brs" />
+
+    <!-- Services -->
+    <script type="text/brightscript" uri="pkg:/source/utils/ResponseBuilder.brs" />
+    <script type="text/brightscript" uri="pkg:/source/services/FlickrService_ResponseParser.brs" />
+    <script type="text/brightscript" uri="pkg:/source/services/FlickrService_ApiMethods.brs" />
+    <script type="text/brightscript" uri="pkg:/source/services/FlickrService.brs" />
+
+    <!-- ViewModels -->
+    <script type="text/brightscript" uri="pkg:/source/viewmodels/MainViewModel_StateManager.brs" />
+    <script type="text/brightscript" uri="pkg:/source/viewmodels/MainViewModel_CategoryLoader.brs" />
+    <script type="text/brightscript" uri="pkg:/source/viewmodels/MainViewModel.brs" />
+
+    <!-- Scene logic -->
+    <script type="text/brightscript" uri="pkg:/components/MainScene.brs" />
+</component>
