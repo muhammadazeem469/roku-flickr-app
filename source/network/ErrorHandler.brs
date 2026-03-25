@@ -8,9 +8,7 @@
 ' @param response - Response object from HttpClient
 ' @return Object with error details
 function ErrorHandler_handle(response as Object) as Object
-    print "[ErrorHandler] Handling error..."
-    
-    if response = invalid then
+if response = invalid then
         return ErrorHandler_createErrorInfo("UNKNOWN", "Invalid response object", false, 0)
     end if
     
@@ -20,9 +18,6 @@ function ErrorHandler_handle(response as Object) as Object
     
     ' Determine if retryable
     isRetryable = ErrorHandler_isRetryable(errorCategory, statusCode)
-    
-    print "[ErrorHandler] Category: "; errorCategory
-    print "[ErrorHandler] Retryable: "; isRetryable
     
     return ErrorHandler_createErrorInfo(errorCategory, errorMessage, isRetryable, statusCode)
 end function

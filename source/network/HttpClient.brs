@@ -10,12 +10,10 @@
 ' @return Object with { success, data, error, statusCode, errorCategory }
 ' Make HTTP GET request (simplified - no status code checking)
 function HttpClient_makeRequest(url as String, timeout as Integer) as Object
-    print "[HttpClient] Making request to: "; url
     
     ' Validate URL
     if url = "" or url = invalid then
-        print "[HttpClient] ERROR: Invalid URL"
-        return HttpClient_createErrorResponse("INVALID_URL", "URL is empty or invalid", 0)
+return HttpClient_createErrorResponse("INVALID_URL", "URL is empty or invalid", 0)
     end if
     
     ' Create request object
@@ -29,14 +27,11 @@ function HttpClient_makeRequest(url as String, timeout as Integer) as Object
     
     ' Validate response
     if response = invalid or response = "" then
-        print "[HttpClient] ERROR: Empty response"
-        return HttpClient_createErrorResponse("EMPTY_RESPONSE", "Server returned empty response", 0)
+return HttpClient_createErrorResponse("EMPTY_RESPONSE", "Server returned empty response", 0)
     end if
     
     ' Success - we got data
-    print "[HttpClient] Request successful - received "; Len(response); " bytes"
-    
-    return {
+return {
         success: true
         data: response
         error: ""
@@ -66,13 +61,11 @@ function HttpClient_getStatusCode(request as Object) as Integer
             ' Status header format: "200 OK" or just "200"
             statusCode = statusStr.ToInt()
         end if
-        print "[HttpClient] Got headers, status: "; statusCode
         return statusCode
     end if
     
     ' If no headers, assume success if we got this far
-    print "[HttpClient] No headers available, assuming 200"
-    return 200
+return 200
 end function
 
 
@@ -83,8 +76,7 @@ function HttpClient_createRequestObject(url as String) as Object
     request = CreateObject("roUrlTransfer")
     
     if request = invalid then
-        print "[HttpClient] ERROR: Failed to create roUrlTransfer"
-        return invalid
+return invalid
     end if
     
     ' Configure request
@@ -121,7 +113,6 @@ end function
 ' @param port - Message port for callbacks
 ' @return roUrlTransfer object or invalid
 function HttpClient_makeAsyncRequest(url as String, port as Object) as Object
-    print "[HttpClient] Starting async request to: "; url
     
     request = HttpClient_createRequestObject(url)
     if request = invalid then
@@ -131,10 +122,8 @@ function HttpClient_makeAsyncRequest(url as String, port as Object) as Object
     request.SetPort(port)
     
     if request.AsyncGetToString() then
-        print "[HttpClient] Async request initiated"
-        return request
+return request
     else
-        print "[HttpClient] ERROR: Failed to initiate async request"
-        return invalid
+return invalid
     end if
 end function

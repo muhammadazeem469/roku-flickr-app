@@ -17,7 +17,6 @@ end function
 ' @param viewModel - Reference to DetailViewModel
 ' @param state - Boolean loading state
 function DetailViewModel_StateManager_setLoading(viewModel as Object, state as Boolean) as Void
-    print "[StateManager] Setting loading state: "; state
     
     viewModel.isLoading = state
     
@@ -33,7 +32,6 @@ end function
 ' @param viewModel - Reference to DetailViewModel
 ' @param errorMessage - Error message to display
 function DetailViewModel_StateManager_setError(viewModel as Object, errorMessage as String) as Void
-    print "[StateManager] Setting error: "; errorMessage
     
     viewModel.hasError = true
     viewModel.errorMessage = errorMessage
@@ -44,8 +42,6 @@ end function
 ' Clear error state
 ' @param viewModel - Reference to DetailViewModel
 function DetailViewModel_StateManager_clearError(viewModel as Object) as Void
-    print "[StateManager] Clearing error"
-    
-    viewModel.hasError = false
+viewModel.hasError = false
     viewModel.errorMessage = ""
 end function

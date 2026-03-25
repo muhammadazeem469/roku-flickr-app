@@ -11,13 +11,11 @@ end sub
 
 ' Load photo information from Flickr API
 sub loadPhotoInfo()
-    print "[PhotoInfoTask] Loading photo info for ID: "; m.top.photoId
     
     photoId = m.top.photoId
     
     if photoId = invalid or photoId = "" then
-        print "[PhotoInfoTask] ERROR: Invalid photo ID"
-        result = {}
+result = {}
         result.success = false
         result.error = "Invalid photo ID"
         result.data = invalid
@@ -31,10 +29,7 @@ sub loadPhotoInfo()
     USE_MOCK_DATA = false  ' ← SET TO true FOR TESTING, false FOR REAL API
     
     if USE_MOCK_DATA then
-        print "[PhotoInfoTask] *** MOCK MODE ENABLED ***"
-        print "[PhotoInfoTask] Using mock data instead of real API"
-        
-        ' Get mock response based on photo ID
+' Get mock response based on photo ID
         mockResult = getMockResponse(photoId)
         m.top.result = mockResult
         return
@@ -50,13 +45,10 @@ sub loadPhotoInfo()
     url = url + "&format=json"
     url = url + "&nojsoncallback=1"
     
-    print "[PhotoInfoTask] Request URL: "; url
-    
     request = CreateObject("roUrlTransfer")
     
     if request = invalid then
-        print "[PhotoInfoTask] ERROR: Failed to create roUrlTransfer"
-        result = {}
+result = {}
         result.success = false
         result.error = "Failed to create HTTP request"
         result.data = invalid
@@ -73,8 +65,7 @@ sub loadPhotoInfo()
     response = request.GetToString()
     
     if response = invalid or response = "" then
-        print "[PhotoInfoTask] ERROR: Empty response from API"
-        result = {}
+result = {}
         result.success = false
         result.error = "Empty response from API"
         result.data = invalid
@@ -82,13 +73,10 @@ sub loadPhotoInfo()
         return
     end if
     
-    print "[PhotoInfoTask] Response received, length: "; response.Len()
-    
     json = ParseJson(response)
     
     if json = invalid then
-        print "[PhotoInfoTask] ERROR: Failed to parse JSON response"
-        result = {}
+result = {}
         result.success = false
         result.error = "Invalid JSON response"
         result.data = invalid
@@ -101,7 +89,6 @@ sub loadPhotoInfo()
         if json.message <> invalid then
             errorMsg = json.message
         end if
-        print "[PhotoInfoTask] API Error: "; errorMsg
         result = {}
         result.success = false
         result.error = errorMsg
@@ -111,18 +98,14 @@ sub loadPhotoInfo()
     end if
     
     if json.photo = invalid then
-        print "[PhotoInfoTask] ERROR: No photo data in response"
-        result = {}
+result = {}
         result.success = false
         result.error = "No photo data in response"
         result.data = invalid
         m.top.result = result
         return
     end if
-    
-    print "[PhotoInfoTask] Photo info loaded successfully"
-    
-    result = {}
+result = {}
     result.success = true
     result.error = ""
     result.data = json.photo
@@ -134,13 +117,10 @@ end sub
 ' MOCK DATA FOR TESTING
 ' ******************************************************
 function getMockResponse(photoId as String) as Object
-    print "[PhotoInfoTask] Getting mock response for ID: "; photoId
     
     ' TEST: Success with all fields
     if photoId = "test_success" or photoId = "mock_success" or photoId.Left(5) = "mock_" then
-        print "[PhotoInfoTask] Mock Scenario: SUCCESS with all fields"
-        
-        result = {}
+result = {}
         result.success = true
         result.error = ""
         result.data = {
@@ -164,9 +144,7 @@ function getMockResponse(photoId as String) as Object
     
     ' TEST: Missing optional fields
     if photoId = "test_minimal" or photoId = "mock_minimal" then
-        print "[PhotoInfoTask] Mock Scenario: SUCCESS with missing fields"
-        
-        result = {}
+result = {}
         result.success = true
         result.error = ""
         result.data = {
@@ -186,9 +164,7 @@ function getMockResponse(photoId as String) as Object
     
     ' TEST: Photo not found error
     if photoId = "test_notfound" or photoId = "mock_error" then
-        print "[PhotoInfoTask] Mock Scenario: API ERROR - Photo not found"
-        
-        result = {}
+result = {}
         result.success = false
         result.error = "Photo not found"
         result.data = invalid
@@ -197,9 +173,7 @@ function getMockResponse(photoId as String) as Object
     
     ' TEST: Network error
     if photoId = "test_network_error" then
-        print "[PhotoInfoTask] Mock Scenario: NETWORK ERROR"
-        
-        result = {}
+result = {}
         result.success = false
         result.error = "Network timeout - Unable to connect to server"
         result.data = invalid
@@ -208,9 +182,7 @@ function getMockResponse(photoId as String) as Object
     
     ' TEST: Extreme values
     if photoId = "test_extreme" then
-        print "[PhotoInfoTask] Mock Scenario: SUCCESS with extreme values"
-        
-        result = {}
+result = {}
         result.success = true
         result.error = ""
         result.data = {
@@ -233,9 +205,7 @@ function getMockResponse(photoId as String) as Object
     end if
     
     ' DEFAULT: Normal success
-    print "[PhotoInfoTask] Mock Scenario: DEFAULT success"
-    
-    result = {}
+result = {}
     result.success = true
     result.error = ""
     result.data = {

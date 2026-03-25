@@ -36,15 +36,13 @@ end function
 ' @return Updated CategoryModel
 function CategoryStateManager_addImage(category as Object, imageModel as Object) as Object
     if imageModel = invalid then
-        print "[CategoryStateManager] Cannot add invalid image to category: "; category.name
         return category
     end if
     
     ' Validate image using ImageValidator
     validator = ImageValidator()
     if not validator.isValid(imageModel) then
-        print "[CategoryStateManager] Invalid image data, skipping"
-        return category
+return category
     end if
     
     ' Add to images array
@@ -64,8 +62,7 @@ end function
 ' @return Updated CategoryModel
 function CategoryStateManager_addImages(category as Object, imageArray as Object) as Object
     if imageArray = invalid or Type(imageArray) <> "roArray" then
-        print "[CategoryStateManager] Invalid image array provided"
-        return category
+return category
     end if
     
     validator = ImageValidator()
@@ -76,14 +73,11 @@ function CategoryStateManager_addImages(category as Object, imageArray as Object
             category.images.Push(imageModel)
             addedCount = addedCount + 1
         else
-            print "[CategoryStateManager] Skipping invalid image in batch"
-        end if
+end if
     end for
     
     category.totalImages = category.images.Count()
     category.lastUpdated = CreateObject("roDateTime").ToISOString()
-    
-    print "[CategoryStateManager] Added "; addedCount; " images to category: "; category.name
     
     return category
 end function
@@ -97,8 +91,6 @@ function CategoryStateManager_clearImages(category as Object) as Object
     category.totalImages = 0
     category.page = 1
     category.hasMorePages = false
-    
-    print "[CategoryStateManager] Cleared all images from category: "; category.name
     
     return category
 end function
@@ -127,9 +119,7 @@ function CategoryStateManager_setLoading(category as Object, state as Boolean) a
     category.isLoading = state
     
     if state then
-        print "[CategoryStateManager] Category loading: "; category.name
     else
-        print "[CategoryStateManager] Category loaded: "; category.name
     end if
     
     return category
@@ -144,8 +134,6 @@ function CategoryStateManager_setError(category as Object, message as String) as
     category.hasError = true
     category.errorMessage = message
     category.isLoading = false
-    
-    print "[CategoryStateManager] Error in category "; category.name; ": "; message
     
     return category
 end function

@@ -8,7 +8,6 @@
 ' @param imageModel - ImageModel object from selected image
 ' @return DetailViewModel object
 function CreateDetailViewModel(imageModel as Object) as Object
-    print "[DetailViewModel] Creating DetailViewModel for image: "; imageModel.id
     
     viewModel = {
         ' Data
@@ -47,31 +46,24 @@ end function
 
 ' Initialize ViewModel
 function DetailViewModel_init() as Void
-    print "[DetailViewModel] Initializing..."
-    
-    if m.image = invalid then
-        print "[DetailViewModel] ERROR: No image model provided"
-        m.stateManager.setError(m, "No image data available")
+if m.image = invalid then
+m.stateManager.setError(m, "No image data available")
         return
     end if
     
     ' Validate required fields
     if m.image.id = "" or m.image.id = invalid then
-        print "[DetailViewModel] ERROR: Invalid image ID"
-        m.stateManager.setError(m, "Invalid image data")
+m.stateManager.setError(m, "Invalid image data")
         return
     end if
     
     ' Initialize basic metadata from image model
     m.infoParser.initializeBasicMetadata(m)
-    
-    print "[DetailViewModel] Initialization complete for: "; m.image.title
 end function
 
 
 ' Load extended information from Flickr API
 function DetailViewModel_loadExtendedInfo() as Void
-    print "[DetailViewModel] Loading extended info for photo: "; m.image.id
     
     m.infoLoader.loadPhotoInfo(m, m.image.id)
 end function
@@ -80,11 +72,8 @@ end function
 ' Parse and populate extended metadata from API response
 ' @param photoData - Parsed JSON response from flickr.photos.getInfo
 function DetailViewModel_parseImageInfo(photoData as Object) as Void
-    print "[DetailViewModel] Parsing image info..."
-    
-    if photoData = invalid then
-        print "[DetailViewModel] ERROR: Invalid photo data"
-        return
+if photoData = invalid then
+return
     end if
     
     ' Store raw data
@@ -92,8 +81,6 @@ function DetailViewModel_parseImageInfo(photoData as Object) as Void
     
     ' Delegate parsing to InfoParser module
     m.infoParser.parseExtendedMetadata(m, photoData)
-    
-    print "[DetailViewModel] Image info parsing complete"
 end function
 
 
@@ -106,10 +93,6 @@ end function
 
 ' Cleanup resources
 function DetailViewModel_cleanup() as Void
-    print "[DetailViewModel] Cleaning up..."
-    
-    m.image = invalid
+m.image = invalid
     m.imageInfo = invalid
-    
-    print "[DetailViewModel] Cleanup complete"
 end function

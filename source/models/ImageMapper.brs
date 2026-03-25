@@ -141,18 +141,15 @@ end function
 ' Validate required fields
 function ImageMapper_validate(json as Object) as Boolean
     if json = invalid then
-        print "[ImageMapper] ERROR: JSON is invalid"
-        return false
+return false
     end if
     
     if json.id = invalid or json.id = "" then
-        print "[ImageMapper] ERROR: Missing id"
-        return false
+return false
     end if
     
     ' Title is optional, but log if missing
     if json.title = invalid or json.title = "" then
-        print "[ImageMapper] WARNING: Missing title for image "; json.id
     end if
     
     return true

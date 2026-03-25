@@ -193,7 +193,6 @@
             rowFocusAnimationStyle="floatingFocus"
             vertFocusAnimationStyle="floatingFocus"
         />
-
     </children>
 
     <!-- Validators -->

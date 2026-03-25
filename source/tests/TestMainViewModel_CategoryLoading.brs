@@ -583,31 +583,18 @@ function RunMainViewModel_CategoryLoadingTests() as Object
         failed: 0
         results: []
     }
-    
-    print ""
-    print "========================================="
-    print suite.name
-    print "========================================="
-    
-    for each test in suite.tests
+print suite.name
+for each test in suite.tests
         results.total = results.total + 1
         result = test()
         
         if result.passed then
             results.passed = results.passed + 1
-            print "[PASS] "; result.name
         else
             results.failed = results.failed + 1
-            print "[FAIL] "; result.name; " - "; result.message
         end if
         
         results.results.Push(result)
     end for
-    
-    print "========================================="
-    print "Results: "; results.passed; "/"; results.total; " passed"
-    print "========================================="
-    print ""
-    
-    return results
+return results
 end function

@@ -17,8 +17,7 @@ end function
 ' @return ContentNode with category data
 function CategoryContentNodeConverter_fromCategoryModel(category as Object) as Object
     if category = invalid then
-        print "[CategoryContentNodeConverter] Invalid category provided"
-        return invalid
+return invalid
     end if
     
     node = CreateObject("roSGNode", "ContentNode")
@@ -51,10 +50,7 @@ function CategoryContentNodeConverter_fromCategoryModel(category as Object) as O
                 node.appendChild(imageNode)
             end if
         end for
-        
-        print "[CategoryContentNodeConverter] Created node for "; category.name; " with "; node.getChildCount(); " images"
-    else
-        print "[CategoryContentNodeConverter] Created empty node for "; category.name
+else
     end if
     
     return node

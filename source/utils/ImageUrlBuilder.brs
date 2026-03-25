@@ -39,8 +39,7 @@ function ImageUrlBuilder_build(photoObj as Object, size as String) as String
     ' Normalize and validate size
     normalizedSize = ImageUrlBuilder_normalizeSize(size, m.config)
     if normalizedSize = "" then
-        print "[ImageUrlBuilder] Invalid size '"; size; "', using default"
-        normalizedSize = m.config.DEFAULTS.GRID_VIEW
+normalizedSize = m.config.DEFAULTS.GRID_VIEW
     end if
     
     server = photoObj.server
@@ -61,23 +60,19 @@ end function
 ' ******************************************************
 function ImageUrlBuilder_validate(photoObj as Object) as Boolean
     if photoObj = invalid then
-        print "[ImageUrlBuilder] Photo object is invalid"
-        return false
+return false
     end if
     
     if photoObj.server = invalid or photoObj.server = "" then
-        print "[ImageUrlBuilder] Missing server field"
-        return false
+return false
     end if
     
     if photoObj.id = invalid or photoObj.id = "" then
-        print "[ImageUrlBuilder] Missing id field"
-        return false
+return false
     end if
     
     if photoObj.secret = invalid or photoObj.secret = "" then
-        print "[ImageUrlBuilder] Missing secret field"
-        return false
+return false
     end if
     
     return true

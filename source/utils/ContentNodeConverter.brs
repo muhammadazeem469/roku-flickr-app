@@ -11,8 +11,7 @@ end function
 ' Convert ImageModel to ContentNode
 function ContentNodeConverter_fromImageModel(imageModel as Object) as Object
     if imageModel = invalid then
-        print "[ContentNodeConverter] Invalid ImageModel"
-        return invalid
+return invalid
     end if
     
     node = CreateObject("roSGNode", "ContentNode")

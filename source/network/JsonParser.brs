@@ -8,48 +8,39 @@
 ' @param response - Response object from HttpClient
 ' @return Object with { success, data, error }
 function JsonParser_parse(response as Object) as Object
-    print "[JsonParser] Parsing JSON response..."
-    
-    ' Validate input
+' Validate input
     if not JsonParser_validateInput(response) then
         return JsonParser_createErrorResponse("Invalid input to parser")
     end if
     
     ' Check if HTTP request was successful
     if not response.success then
-        print "[JsonParser] ERROR: Cannot parse failed request"
-        return JsonParser_createErrorResponse(response.error)
+return JsonParser_createErrorResponse(response.error)
     end if
     
     ' Get response data
     responseData = response.data
     if responseData = invalid or responseData = "" then
-        print "[JsonParser] ERROR: No data to parse"
-        return JsonParser_createErrorResponse("No data in response")
+return JsonParser_createErrorResponse("No data in response")
     end if
     
     ' Attempt to parse JSON
     json = ParseJson(responseData)
     
     if json = invalid then
-        print "[JsonParser] ERROR: Failed to parse JSON"
-        print "[JsonParser] Response preview: "; Left(responseData, 100)
         return JsonParser_createErrorResponse("Invalid JSON format")
     end if
     
     ' Check for API-level errors
     apiError = JsonParser_checkApiError(json)
     if apiError <> "" then
-        print "[JsonParser] API Error: "; apiError
         return {
             success: false
             data: json
             error: apiError
         }
     end if
-    
-    print "[JsonParser] JSON parsed successfully"
-    return {
+return {
         success: true
         data: json
         error: ""
@@ -62,13 +53,11 @@ end function
 ' @return Boolean - true if valid
 function JsonParser_validateInput(response as Object) as Boolean
     if response = invalid then
-        print "[JsonParser] ERROR: Response is invalid"
-        return false
+return false
     end if
     
     if response.data = invalid then
-        print "[JsonParser] ERROR: Response has no data field"
-        return false
+return false
     end if
     
     return true
