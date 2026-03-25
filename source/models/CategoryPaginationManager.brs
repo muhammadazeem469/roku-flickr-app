@@ -26,8 +26,6 @@ function CategoryPaginationManager_incrementPage(category as Object) as Object
         category.hasMorePages = (category.page < category.totalPages)
     end if
     
-    print "[CategoryPaginationManager] "; category.name; " page: "; category.page; "/"; category.totalPages
-    
     return category
 end function
 
@@ -38,10 +36,7 @@ end function
 function CategoryPaginationManager_resetPage(category as Object) as Object
     category.page = 1
     category.hasMorePages = true
-    
-    print "[CategoryPaginationManager] Reset "; category.name; " to page 1"
-    
-    return category
+return category
 end function
 
 
@@ -54,10 +49,7 @@ function CategoryPaginationManager_setTotalPages(category as Object, totalPages 
     
     ' Update hasMorePages based on current page
     category.hasMorePages = (category.page < totalPages)
-    
-    print "[CategoryPaginationManager] "; category.name; " has "; totalPages; " total pages"
-    
-    return category
+return category
 end function
 
 
@@ -67,22 +59,19 @@ end function
 function CategoryPaginationManager_canLoadMore(category as Object) as Boolean
     ' Can't load if already loading
     if category.isLoading then
-        print "[CategoryPaginationManager] Cannot load - already loading"
-        return false
+return false
     end if
     
     ' Can't load if has error
     if category.hasError then
-        print "[CategoryPaginationManager] Cannot load - has error"
-        return false
+return false
     end if
     
     ' Check if more pages available
     if category.totalPages > 0 then
         canLoad = (category.page < category.totalPages)
         if not canLoad then
-            print "[CategoryPaginationManager] No more pages available"
-        end if
+end if
         return canLoad
     end if
     

@@ -21,15 +21,13 @@ end function
 ' @return Updated CategoryModel
 function CategoryImageManager_addImage(category as Object, imageModel as Object) as Object
     if imageModel = invalid then
-        print "[CategoryImageManager] Cannot add invalid image to category: "; category.name
         return category
     end if
     
     ' Validate image
     validator = ImageValidator()
     if not validator.isValid(imageModel) then
-        print "[CategoryImageManager] Invalid image data, skipping"
-        return category
+return category
     end if
     
     ' Add to images array
@@ -38,8 +36,6 @@ function CategoryImageManager_addImage(category as Object, imageModel as Object)
     
     ' Update timestamp
     category.lastUpdated = CreateObject("roDateTime").ToISOString()
-    
-    print "[CategoryImageManager] Added image '"; imageModel.title; "' to "; category.name
     
     return category
 end function
@@ -51,13 +47,11 @@ end function
 ' @return Updated CategoryModel
 function CategoryImageManager_addImages(category as Object, imageArray as Object) as Object
     if imageArray = invalid or Type(imageArray) <> "roArray" then
-        print "[CategoryImageManager] Invalid image array provided"
-        return category
+return category
     end if
     
     if imageArray.Count() = 0 then
-        print "[CategoryImageManager] Empty image array provided"
-        return category
+return category
     end if
     
     validator = ImageValidator()
@@ -68,14 +62,11 @@ function CategoryImageManager_addImages(category as Object, imageArray as Object
             category.images.Push(imageModel)
             addedCount = addedCount + 1
         else
-            print "[CategoryImageManager] Skipping invalid image in batch"
-        end if
+end if
     end for
     
     category.totalImages = category.images.Count()
     category.lastUpdated = CreateObject("roDateTime").ToISOString()
-    
-    print "[CategoryImageManager] Added "; addedCount; "/"; imageArray.Count(); " images to "; category.name
     
     return category
 end function
@@ -89,8 +80,6 @@ function CategoryImageManager_clearImages(category as Object) as Object
     
     category.images = []
     category.totalImages = 0
-    
-    print "[CategoryImageManager] Cleared "; previousCount; " images from "; category.name
     
     return category
 end function
@@ -121,7 +110,6 @@ function CategoryImageManager_removeImage(category as Object, imageId as String)
         if category.images[i].id = imageId then
             category.images.Delete(i)
             category.totalImages = category.images.Count()
-            print "[CategoryImageManager] Removed image "; imageId; " from "; category.name
             exit for
         end if
     end for

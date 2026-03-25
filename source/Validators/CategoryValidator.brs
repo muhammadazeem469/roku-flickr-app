@@ -17,8 +17,7 @@ end function
 ' @return Boolean
 function CategoryValidator_isValid(category as Object) as Boolean
     if category = invalid then
-        print "[CategoryValidator] Category is invalid"
-        return false
+return false
     end if
     
     return m.hasRequiredFields(category)
@@ -34,16 +33,13 @@ function CategoryValidator_hasRequiredFields(category as Object) as Boolean
     hasMethod = (category.method <> invalid and category.method <> "")
     
     if not hasId then
-        print "[CategoryValidator] Missing category ID"
-    end if
+end if
     
     if not hasName then
-        print "[CategoryValidator] Missing category name"
-    end if
+end if
     
     if not hasMethod then
-        print "[CategoryValidator] Missing API method"
-    end if
+end if
     
     return hasId and hasName and hasMethod
 end function

@@ -19,9 +19,7 @@ end function
 ' Initialize basic metadata from ImageModel
 ' @param viewModel - Reference to DetailViewModel
 function DetailViewModel_InfoParser_initializeBasicMetadata(viewModel as Object) as Void
-    print "[InfoParser] Initializing basic metadata..."
-    
-    ' Set dimensions from image model if available
+' Set dimensions from image model if available
     viewModel.dimensions = ""
     if viewModel.image.width > 0 and viewModel.image.height > 0 then
         viewModel.dimensions = viewModel.image.width.ToStr() + " x " + viewModel.image.height.ToStr()
@@ -30,8 +28,6 @@ function DetailViewModel_InfoParser_initializeBasicMetadata(viewModel as Object)
     ' Copy basic info
     viewModel.viewCount = viewModel.image.views
     viewModel.fullDescription = viewModel.image.description
-    
-    print "[InfoParser] Basic metadata initialized"
 end function
 
 
@@ -39,9 +35,7 @@ end function
 ' @param viewModel - Reference to DetailViewModel
 ' @param photoData - Photo data from API
 function DetailViewModel_InfoParser_parseExtendedMetadata(viewModel as Object, photoData as Object) as Void
-    print "[InfoParser] Parsing extended metadata..."
-    
-    ' Parse each metadata component
+' Parse each metadata component
     m.parseDimensions(viewModel, photoData)
     m.parseUploadDate(viewModel, photoData)
     m.parseDescription(viewModel, photoData)
@@ -50,13 +44,11 @@ function DetailViewModel_InfoParser_parseExtendedMetadata(viewModel as Object, p
     ' Parse view count
     if photoData.views <> invalid then
         viewModel.viewCount = photoData.views.ToInt()
-        print "[InfoParser] Views: "; viewModel.viewCount.ToStr()
     end if
     
     ' Parse comment count
     if photoData.comments <> invalid and photoData.comments._content <> invalid then
         viewModel.commentCount = photoData.comments._content.ToInt()
-        print "[InfoParser] Comments: "; viewModel.commentCount.ToStr()
     end if
     
     ' Update title if more detailed version available
@@ -71,8 +63,6 @@ function DetailViewModel_InfoParser_parseExtendedMetadata(viewModel as Object, p
     if photoData.originalsecret <> invalid then
         viewModel.fileSize = "Not available"
     end if
-    
-    print "[InfoParser] Extended metadata parsing complete"
 end function
 
 
@@ -86,7 +76,6 @@ function DetailViewModel_InfoParser_parseDimensions(viewModel as Object, photoDa
             width = photoData.originalwidth
             height = photoData.originalheight
             viewModel.dimensions = width.ToStr() + " x " + height.ToStr()
-            print "[InfoParser] Original dimensions: "; viewModel.dimensions
         end if
     end if
 end function
@@ -99,7 +88,6 @@ function DetailViewModel_InfoParser_parseUploadDate(viewModel as Object, photoDa
     if photoData.dates <> invalid and photoData.dates.posted <> invalid then
         timestamp = photoData.dates.posted.ToInt()
         viewModel.uploadDate = FormatUnixTimestamp(timestamp)
-        print "[InfoParser] Upload date: "; viewModel.uploadDate
     end if
 end function
 
@@ -110,8 +98,7 @@ end function
 function DetailViewModel_InfoParser_parseDescription(viewModel as Object, photoData as Object) as Void
     if photoData.description <> invalid and photoData.description._content <> invalid then
         viewModel.fullDescription = photoData.description._content
-        print "[InfoParser] Description length: "; viewModel.fullDescription.Len(); " chars"
-    else
+else
         ' Fallback to basic description from image model
         if viewModel.image.description <> "" then
             viewModel.fullDescription = viewModel.image.description
@@ -134,7 +121,6 @@ function DetailViewModel_InfoParser_parseTags(viewModel as Object, photoData as 
             end if
         end for
         viewModel.image.tags = tagArray
-        print "[InfoParser] Tags: "; tagArray.Count()
     end if
 end function
 

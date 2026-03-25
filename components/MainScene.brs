@@ -16,22 +16,18 @@
 ' ******************************************************
 
 sub init()
-    print "========================================="
-    print "[MainScene] INIT START (FG-021)"
-    print "========================================="
-
-    ' === UI References ===
+' === UI References ===
     m.appTitle        = m.top.findNode("appTitle")
     m.loadingBackdrop = m.top.findNode("loadingBackdrop")
     m.spinnerGroup    = m.top.findNode("spinnerGroup")
     m.spinnerAnim     = m.top.findNode("spinnerAnim")
     m.loadingProgress = m.top.findNode("loadingProgress")
     m.globalError     = m.top.findNode("globalError")
+
     m.rowList         = m.top.findNode("categoryRowList")
 
     if m.rowList = invalid then
-        print "[MainScene] ERROR: RowList not found!"
-        return
+return
     end if
 
     ' === Focus: Scene first ===
@@ -49,13 +45,13 @@ sub init()
     m.top.observeField("appTextColor", "onTextColorChanged")
 
     ' === ViewModel init ===
-    print "[MainScene] Creating ViewModel..."
-    m.viewModel = CreateMainViewModel()
+m.viewModel = CreateMainViewModel()
     m.viewModel.init()
 
     ' === Loading state tracking (FG-021) ===
     m.totalCategories       = m.viewModel.categories.Count()
     m.loadedCategoryCount   = 0
+    m.processedCategoryCount = 0   ' FG-022: all completed tasks (success + failure)
     m.firstRowRevealed      = false
     m.firstDataReady        = false
     m.spinnerMinTimeElapsed = false
@@ -71,9 +67,7 @@ sub init()
     spinnerTimer.observeField("fire", "onSpinnerMinTimeElapsed")
     m.spinnerMinTimer = spinnerTimer
     spinnerTimer.control = "start"
-    print "[MainScene] Spinner min timer started (2s)"
-
-    ' Update progress label
+' Update progress label
     updateLoadingProgress(0, m.totalCategories)
 
     ' === Build placeholder RowList (FG-021) ===
@@ -87,10 +81,6 @@ sub init()
 
     ' === Start loading ===
     startCategoryLoading()
-
-    print "========================================="
-    print "[MainScene] INIT COMPLETE (FG-021)"
-    print "========================================="
 end sub
 
 
@@ -135,8 +125,7 @@ end sub
 ' Minimum spinner timer fired — 2 seconds elapsed (FG-021)
 ' ******************************************************
 sub onSpinnerMinTimeElapsed()
-    print "[MainScene] FG-021: Spinner min time elapsed"
-    m.spinnerMinTimeElapsed = true
+m.spinnerMinTimeElapsed = true
     m.spinnerMinTimer = invalid
 
     ' If data already arrived, reveal now
@@ -154,19 +143,14 @@ end sub
 sub revealRowList()
     ' Both gates must be true
     if not m.spinnerMinTimeElapsed then
-        print "[MainScene] FG-021: Data ready but spinner min time not yet elapsed"
-        return
+return
     end if
     if not m.firstDataReady then
-        print "[MainScene] FG-021: Min time elapsed but no data yet"
-        return
+return
     end if
     if m.firstRowRevealed then return
     m.firstRowRevealed = true
-
-    print "[MainScene] FG-021: Revealing RowList, hiding loading overlay"
-
-    ' Hide loading overlay
+' Hide loading overlay
     hideGlobalLoading()
 
     ' Show RowList
@@ -181,9 +165,7 @@ end sub
 ' Build RowList with placeholder rows immediately (FG-021)
 ' ******************************************************
 sub buildPlaceholderRowList()
-    print "[MainScene] Building placeholder RowList..."
-
-    rootContent = CreateObject("roSGNode", "ContentNode")
+rootContent = CreateObject("roSGNode", "ContentNode")
 
     for each category in m.viewModel.categories
         rowNode       = CreateObject("roSGNode", "ContentNode")
@@ -199,7 +181,6 @@ sub buildPlaceholderRowList()
     end for
 
     m.rowList.content = rootContent
-    print "[MainScene] Placeholder RowList built with "; m.totalCategories; " rows"
 end sub
 
 
@@ -207,11 +188,8 @@ end sub
 ' Start sequential category loading
 ' ******************************************************
 sub startCategoryLoading()
-    print "[MainScene] STARTING CATEGORY LOADING"
-
-    if m.viewModel.loadQueue = invalid or m.viewModel.loadQueue.Count() = 0 then
-        print "[MainScene] ERROR: No categories to load"
-        showGlobalError("No categories configured")
+if m.viewModel.loadQueue = invalid or m.viewModel.loadQueue.Count() = 0 then
+showGlobalError("No categories configured")
         return
     end if
 
@@ -224,9 +202,7 @@ end sub
 ' ******************************************************
 sub loadNextCategory()
     if m.viewModel.loadQueue = invalid or m.viewModel.loadQueue.Count() = 0 then
-        print "[MainScene] All categories processed"
-
-        if m.loadedCategoryCount = 0 then
+if m.processedCategoryCount = 0 and m.loadedCategoryCount = 0 then
             showGlobalError("No categories could be loaded")
         else
             ' Force reveal if not already done
@@ -239,12 +215,14 @@ sub loadNextCategory()
     end if
 
     categoryIndex = m.viewModel.loadQueue.Shift()
-    print "[MainScene] Loading category index: "; categoryIndex
+
 
     task = m.viewModel.categoryLoader.loadCategoryWithTask(m.viewModel, categoryIndex, m.top)
 
     if task = invalid then
-        print "[MainScene] ERROR: Failed to create task for category "; categoryIndex
+
+        ' FG-022: Show error row so the user sees something instead of a blank row
+        showErrorRow(categoryIndex)
         loadNextCategory()
         return
     end if
@@ -263,9 +241,11 @@ sub onCategoryLoaded(event as Object)
     result        = task.result
     categoryIndex = task.categoryIndex
 
-    print "[MainScene] Category loaded - index: "; categoryIndex; " success: "; result.success
-
     m.viewModel.categoryLoader.parseApiResponse(m.viewModel, categoryIndex, result)
+
+    ' FG-022: count every completed task so loadNextCategory knows
+    ' we processed something even when all categories failed
+    m.processedCategoryCount = m.processedCategoryCount + 1
 
     if result.success then
         m.loadedCategoryCount = m.loadedCategoryCount + 1
@@ -279,12 +259,19 @@ sub onCategoryLoaded(event as Object)
         ' Mark first data ready and attempt reveal
         if not m.firstDataReady then
             m.firstDataReady = true
-            print "[MainScene] FG-021: First data ready"
-        end if
+end if
         revealRowList()
     else
-        print "[MainScene] Failed: "; categoryIndex; " - "; result.error
-        clearPlaceholderRow(categoryIndex)
+        ' FG-022: Show a user-facing error/empty state in the row
+        ' instead of silently clearing it.
+showErrorRow(categoryIndex)
+
+        ' FG-022: always set firstDataReady so revealRowList fires
+        ' even when all categories fail — error rows must be visible
+        if not m.firstDataReady then
+            m.firstDataReady = true
+        end if
+        revealRowList()
     end if
 
     ' Clean up task
@@ -312,7 +299,7 @@ sub refreshRowAtIndex(categoryIndex as Integer)
 
     images = category.images
     if images = invalid or images.Count() = 0 then
-        clearPlaceholderRow(categoryIndex)
+        showErrorRow(categoryIndex)
         return
     end if
 
@@ -339,18 +326,133 @@ sub refreshRowAtIndex(categoryIndex as Integer)
         end if
     end for
 
-    print "[MainScene] FG-021: Row "; categoryIndex; " ("; category.display_name; ") updated with "; addedCount; " items"
+    ' FG-022: Restore original category name in row title
+    rowNode = m.rowList.content.getChild(categoryIndex)
+    if rowNode <> invalid then
+        titleText = category.display_name
+        if titleText = invalid or titleText = "" then titleText = category.name
+        rowNode.title = titleText
+    end if
 end sub
 
 
 ' ******************************************************
-' Clear a failed row's placeholder
+' FG-022: Show error/empty state for a failed row.
+'
+' APPROACH: Update the row's title (shown as the row
+' label above the cards) to display the error message.
+' This is the only text in a RowList that:
+'   1. Is guaranteed to render on all Roku firmware
+'   2. Scrolls with the RowList vertically
+'   3. Requires no custom components or fields
+'
+' The row label sits above each row and is always visible.
+' We prepend "⚠ " to make it stand out from normal titles.
+' The original category name is preserved in display_name
+' so we can restore it on retry.
 ' ******************************************************
-sub clearPlaceholderRow(categoryIndex as Integer)
+sub showErrorRow(categoryIndex as Integer)
     if m.rowList.content = invalid then return
+
+    category = m.viewModel.categories[categoryIndex]
+    if category = invalid then return
+
     rowNode = m.rowList.content.getChild(categoryIndex)
     if rowNode = invalid then return
+
+    ' Clear existing children — leave row empty (no blank cards)
     rowNode.removeChildrenIndex(rowNode.getChildCount(), 0)
+
+    ' Determine message
+    errorType = ""
+    if category.errorType <> invalid then errorType = category.errorType
+
+    message = category.errorMessage
+    if message = invalid or message = "" then
+        message = "Couldn't load images. Please try again later."
+    end if
+
+    canRetry = (errorType = "NETWORK" or errorType = "API_ERROR" or errorType = "")
+
+    retryHint = ""
+    if canRetry then retryHint = " — Press OK to retry"
+
+    ' ── Update row title to show error message ─────────────
+    ' Row label is always visible, scrolls with the list,
+    ' and works on all Roku firmware versions.
+    rowNode.title = "⚠  " + message + retryHint
+
+    ' ── Add one invisible sentinel ContentNode ─────────────
+    ' Required so the row has a focusable item (empty rows
+    ' cannot receive focus). Uses a 1x1 transparent poster.
+    sentinel = CreateObject("roSGNode", "ContentNode")
+    sentinel.HDPosterUrl = ""
+    sentinel.SDPosterUrl = ""
+    sentinel.title       = ""
+
+    sentinel.addField("isError",       "boolean", false)
+    sentinel.addField("isPlaceholder", "boolean", false)
+    sentinel.addField("errorType",     "string",  false)
+    sentinel.addField("canRetry",      "boolean", false)
+    sentinel.addField("categoryIndex", "integer", false)
+
+    sentinel.isError       = true
+    sentinel.isPlaceholder = false
+    sentinel.errorType     = errorType
+    sentinel.canRetry      = canRetry
+    sentinel.categoryIndex = categoryIndex
+
+    rowNode.appendChild(sentinel)
+
+    ' Reset item size to normal (no wide card needed)
+    totalRows = m.viewModel.categories.Count()
+    sizes = []
+    for i = 0 to totalRows - 1
+        sizes.Push([280, 210])
+    end for
+    m.rowList.rowItemSize = sizes
+end sub
+
+
+' ******************************************************
+' FG-022: Retry a single failed category.
+' Clears its error state, re-queues it, and kicks off
+' loading — without disturbing any other row.
+' ******************************************************
+sub retryCategory(categoryIndex as Integer)
+
+    ' Refresh category state (clears images + error)
+    m.viewModel.categoryLoader.refreshCategory(m.viewModel, categoryIndex)
+
+    ' Put the category back into loading state in the UI
+    category = m.viewModel.categories[categoryIndex]
+    rowNode = m.rowList.content.getChild(categoryIndex)
+    if rowNode <> invalid then
+        rowNode.removeChildrenIndex(rowNode.getChildCount(), 0)
+
+        ' Restore original title while retrying
+        titleText = category.display_name
+        if titleText = invalid or titleText = "" then titleText = category.name
+        rowNode.title = titleText + " — Loading..."
+
+        placeholder = CreateObject("roSGNode", "ContentNode")
+        placeholder.title = ""
+        placeholder.HDPosterUrl = ""
+        placeholder.addField("isPlaceholder", "boolean", false)
+        placeholder.isPlaceholder = true
+        rowNode.appendChild(placeholder)
+    end if
+
+    ' Launch a fresh task for this category
+    task = m.viewModel.categoryLoader.loadCategoryWithTask(m.viewModel, categoryIndex, m.top)
+    if task = invalid then
+        showErrorRow(categoryIndex)
+        return
+    end if
+
+    task.observeField("result", "onCategoryLoaded")
+    m.activeTasks.Push(task)
+    task.control = "RUN"
 end sub
 
 
@@ -365,6 +467,9 @@ sub configureRowList()
     m.rowList.focusFootprintBlendColor = "0xFFFFFFFF"
     m.rowList.focusBitmapBlendColor    = "0xFFFFFFFF"
     m.rowList.rowLabelColor            = "0xCCCCCCCC"
+    ' FG-022: rowLabelColor is per-row settable — we override
+    ' individual rows to red when showing error messages.
+    ' Normal rows stay 0xCCCCCCCC, error rows get 0xFF6666FF.
 end sub
 
 
@@ -397,7 +502,6 @@ end sub
 ' Show global error — hides spinner, shows error text
 ' ******************************************************
 sub showGlobalError(message as String)
-    print "[MainScene] ERROR: "; message
     hideGlobalLoading()
     m.rowList.visible     = false
     m.globalError.visible = true
@@ -412,11 +516,33 @@ sub onItemSelected()
     rowIndex  = m.rowList.rowItemSelected[0]
     itemIndex = m.rowList.rowItemSelected[1]
 
-    print "[MainScene] ITEM SELECTED - Row: "; rowIndex; " Item: "; itemIndex
-
     selectedItem = m.rowList.content.getChild(rowIndex).getChild(itemIndex)
 
     if selectedItem <> invalid then
+        ' -------------------------------------------------------
+        ' FG-022: Error sentinel — user pressed OK on an error row.
+        ' If the error is retryable, kick off a retry for that row.
+        ' -------------------------------------------------------
+        ' FG-022: Check for error sentinel ContentNode
+        isError = false
+        if selectedItem.doesExist("isError") then isError = selectedItem.isError
+
+        if isError then
+            canRetry = false
+            if selectedItem.doesExist("canRetry") then canRetry = selectedItem.canRetry
+
+            if canRetry then
+                catIdx = 0
+                if selectedItem.doesExist("categoryIndex") then catIdx = selectedItem.categoryIndex
+                retryCategory(catIdx)
+            else
+end if
+            return
+        end if
+
+        ' -------------------------------------------------------
+        ' Normal flow — placeholder or real image
+        ' -------------------------------------------------------
         isPlaceholder = false
         if selectedItem.doesExist("isPlaceholder") then
             isPlaceholder = selectedItem.isPlaceholder
@@ -431,8 +557,7 @@ sub onItemSelected()
                 m.viewModel.navigationRequested = false
             end if
         else
-            print "[MainScene] Ignoring placeholder item"
-        end if
+end if
     end if
 end sub
 
@@ -443,7 +568,6 @@ end sub
 sub onItemFocused()
     rowIndex  = m.rowList.rowItemFocused[0]
     itemIndex = m.rowList.rowItemFocused[1]
-    print "[MainScene] Focus: ["; rowIndex; ", "; itemIndex; "]"
 end sub
 
 
@@ -451,7 +575,6 @@ end sub
 ' Open detail screen
 ' ******************************************************
 sub openDetailScreen(imageModel as Object)
-    print "[MainScene] Opening detail: "; imageModel.title
 
     m.detailScene = CreateObject("roSGNode", "DetailScene")
     if m.detailScene = invalid then return

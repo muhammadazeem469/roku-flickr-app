@@ -5,9 +5,7 @@
 ' ******************************************************
 
 sub init()
-    print "[ImageCard] Initializing..."
-
-    ' Generate unique ID for this card instance (needed for animations)
+' Generate unique ID for this card instance (needed for animations)
     m.top.id = "imageCard_" + Rnd(999999).ToStr()
 
     ' Get references to child nodes
@@ -35,8 +33,6 @@ sub init()
 
     ' Apply initial size
     updateCardSize()
-
-    print "[ImageCard] Initialization complete"
 end sub
 
 
@@ -47,12 +43,9 @@ sub onImageModelChanged()
     imageModel = m.top.imageModel
 
     if imageModel = invalid then
-        print "[ImageCard] No image model provided"
-        showError()
+showError()
         return
     end if
-
-    print "[ImageCard] Image model received: "; imageModel.id
 
     ' Reset state
     m.imageLoaded = false
@@ -72,11 +65,9 @@ sub onImageModelChanged()
     end if
 
     if imageUrl <> "" then
-        print "[ImageCard] Loading image: "; imageUrl
         m.thumbnail.uri = imageUrl
     else
-        print "[ImageCard] No valid image URL found"
-        showError()
+showError()
     end if
 
     ' Set title
@@ -97,20 +88,15 @@ end sub
 sub onImageLoadStatusChanged()
     loadStatus = m.thumbnail.loadStatus
 
-    print "[ImageCard] Image load status: "; loadStatus
-
     if loadStatus = "ready" then
         m.imageLoaded = true
         m.hasError    = false
         showImage()
-        print "[ImageCard] Image loaded successfully"
-
-    else if loadStatus = "failed" then
+else if loadStatus = "failed" then
         m.imageLoaded = false
         m.hasError    = true
         showError()
-        print "[ImageCard] Image load failed"
-    end if
+end if
 end sub
 
 
@@ -153,7 +139,6 @@ end sub
 ' ******************************************************
 sub onFocusChanged()
     hasFocus = m.top.hasFocus()
-    print "[ImageCard] Focus changed: "; hasFocus
 
     if hasFocus then
         applyFocusedState()
@@ -184,8 +169,6 @@ sub applyFocusedState()
     if m.top.showTitle then
         m.titleLabel.visible = true
     end if
-
-    print "[ImageCard] Applied focused state"
 end sub
 
 
@@ -208,8 +191,6 @@ sub applyUnfocusedState()
     scaleAnimation.control = "start"
 
     updateTitleVisibility()
-
-    print "[ImageCard] Applied unfocused state"
 end sub
 
 
@@ -248,8 +229,6 @@ sub updateCardSize()
     width  = m.top.cardWidth
     height = m.top.cardHeight
 
-    print "[ImageCard] Updating size: "; width; "x"; height
-
     m.cardBackground.width  = width
     m.cardBackground.height = height
 
@@ -287,11 +266,9 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
     handled = false
 
     if press then
-        print "[ImageCard] Key pressed: "; key
 
         if key = "OK" then
-            print "[ImageCard] Card selected"
-            m.top.itemSelected = m.top.imageModel
+m.top.itemSelected = m.top.imageModel
             handled = true
         end if
     end if

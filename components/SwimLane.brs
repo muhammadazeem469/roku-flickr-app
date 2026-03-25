@@ -7,9 +7,7 @@
 ' ******************************************************
 
 sub init()
-    print "[SwimLane] Initializing..."
-
-    ' Layout constants
+' Layout constants
     m.CARD_WIDTH   = 400
     m.CARD_HEIGHT  = 300
     m.TITLE_HEIGHT = 50
@@ -34,8 +32,6 @@ sub init()
     ' Observers
     m.top.observeField("categoryModel", "onCategoryModelChanged")
     m.top.observeField("cardSpacing",   "onCardSpacingChanged")
-
-    print "[SwimLane] Initialization complete"
 end sub
 
 
@@ -46,11 +42,8 @@ sub onCategoryModelChanged()
     category = m.top.categoryModel
 
     if category = invalid then
-        print "[SwimLane] No category model"
-        return
+return
     end if
-
-    print "[SwimLane] Category model received: "; category.name
 
     ' Use display_name for the visible title, fall back to name
     titleText = category.display_name
@@ -84,9 +77,7 @@ end sub
 ' Build ImageCard nodes for each image
 ' ******************************************************
 sub renderCards(images as Object)
-    print "[SwimLane] Rendering "; images.count(); " cards"
-
-    m.loadingIndicator.visible = false
+m.loadingIndicator.visible = false
     m.emptyMessage.visible     = false
     m.errorMessage.visible     = false
 
@@ -105,8 +96,7 @@ sub renderCards(images as Object)
             card.observeField("itemSelected", "onCardSelected")
             m.cards.push(card)
         else
-            print "[SwimLane] WARNING: Failed to create ImageCard"
-        end if
+end if
     end for
 
     if m.cards.count() > 0 then
@@ -116,14 +106,11 @@ sub renderCards(images as Object)
         ' Reset scroll position to show first cards
         m.cardContainer.translation = [0, 0]
     end if
-
-    print "[SwimLane] Rendered "; m.cards.count(); " cards"
 end sub
 
 
 sub showLoading()
-    print "[SwimLane] Showing loading state"
-    m.loadingIndicator.visible = true
+m.loadingIndicator.visible = true
     m.emptyMessage.visible     = false
     m.errorMessage.visible     = false
     m.cardContainer.removeChildrenIndex(m.cardContainer.getChildCount(), 0)
@@ -132,8 +119,7 @@ end sub
 
 
 sub showEmpty()
-    print "[SwimLane] No images to display"
-    m.loadingIndicator.visible = false
+m.loadingIndicator.visible = false
     m.emptyMessage.visible     = true
     m.errorMessage.visible     = false
     m.cardContainer.removeChildrenIndex(m.cardContainer.getChildCount(), 0)
@@ -142,7 +128,6 @@ end sub
 
 
 sub showError(message as String)
-    print "[SwimLane] Error: "; message
     m.loadingIndicator.visible = false
     m.emptyMessage.visible     = false
     m.errorMessage.visible     = true
@@ -155,7 +140,6 @@ end sub
 sub onCardSelected()
     for each card in m.cards
         if card.itemSelected <> invalid then
-            print "[SwimLane] Card selected: "; card.itemSelected.id
             m.top.itemSelected = card.itemSelected
             return
         end if
@@ -168,20 +152,16 @@ end sub
 ' ******************************************************
 sub setFocusToCard(index as Integer)
     if m.cards.count() = 0 then 
-        print "[SwimLane] setFocusToCard: no cards exist"
-        return
+return
     end if
     
     if index < 0 then index = 0
     if index >= m.cards.count() then index = m.cards.count() - 1
 
-    print "[SwimLane] setFocusToCard called with index "; index
-
     ' Remove focus from previously focused card
     if m.focusedIndex >= 0 and m.focusedIndex < m.cards.count() then
         if m.focusedIndex <> index then
             m.cards[m.focusedIndex].setFocus(false)
-            print "[SwimLane] Removed focus from card "; m.focusedIndex
         end if
     end if
 
@@ -191,7 +171,6 @@ sub setFocusToCard(index as Integer)
     
     ' Set focus to the new card
     m.cards[index].setFocus(true)
-    print "[SwimLane] Set focus to card "; index
     
     ' Scroll to make this card visible
     scrollToCard(index)
@@ -203,7 +182,6 @@ end sub
 ' ******************************************************
 sub scrollToCard(cardIndex as Integer)
     if cardIndex < 0 or cardIndex >= m.cards.count() then 
-        print "[SwimLane] scrollToCard: invalid index "; cardIndex
         return
     end if
 
@@ -231,13 +209,11 @@ sub scrollToCard(cardIndex as Integer)
     ' Card is too far right - scroll container left (negative X)
     if cardScreenX > safeRight then
         targetX = safeRight - cardPositionX
-        print "[SwimLane] Card "; cardIndex; " too far right, scrolling to "; targetX
     end if
     
     ' Card is too far left - scroll container right (positive X)
     if cardScreenX < safeLeft then
         targetX = safeLeft - cardPositionX
-        print "[SwimLane] Card "; cardIndex; " too far left, scrolling to "; targetX
     end if
     
     ' Don't scroll past the beginning (first card visible)
@@ -255,11 +231,9 @@ sub scrollToCard(cardIndex as Integer)
     
     ' Apply the scroll
     if targetX <> currentX then
-        print "[SwimLane] Scrolling from "; currentX; " to "; targetX
         m.cardContainer.translation = [targetX, 0]
     else
-        print "[SwimLane] Card "; cardIndex; " already visible, no scroll needed"
-    end if
+end if
 end sub
 
 
@@ -270,25 +244,19 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
     if not press then return false
     if m.cards.count() = 0 then return false
 
-    print "[SwimLane] Key: "; key
-
     if key = "right" then
         newIndex = m.focusedIndex + 1
         if newIndex < m.cards.count() then
-            print "[SwimLane] Moving right from "; m.focusedIndex; " to "; newIndex
             setFocusToCard(newIndex)
         else
-            print "[SwimLane] At right boundary, staying at "; m.focusedIndex
         end if
         return true
 
     else if key = "left" then
         newIndex = m.focusedIndex - 1
         if newIndex >= 0 then
-            print "[SwimLane] Moving left from "; m.focusedIndex; " to "; newIndex
             setFocusToCard(newIndex)
         else
-            print "[SwimLane] At left boundary, staying at "; m.focusedIndex
         end if
         return true
 
@@ -296,7 +264,6 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
         if m.focusedIndex >= 0 and m.focusedIndex < m.cards.count() then
             focusedCard = m.cards[m.focusedIndex]
             if focusedCard <> invalid and focusedCard.imageModel <> invalid then
-                print "[SwimLane] OK pressed on card "; m.focusedIndex
                 m.top.itemSelected = focusedCard.imageModel
                 return true
             end if

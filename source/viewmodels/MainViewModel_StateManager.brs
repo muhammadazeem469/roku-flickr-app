@@ -14,7 +14,6 @@ end function
 
 ' Set global error state
 function MainViewModel_StateManager_setGlobalError(viewModel as Object, errorMessage as String) as Void
-    print "[StateManager] Setting global error: "; errorMessage
     
     viewModel.hasError = true
     viewModel.errorMessage = errorMessage
@@ -27,9 +26,7 @@ end function
 
 ' Clear global error state
 function MainViewModel_StateManager_clearGlobalError(viewModel as Object) as Void
-    print "[StateManager] Clearing global error"
-    
-    viewModel.hasError = false
+viewModel.hasError = false
     viewModel.errorMessage = ""
 end function
 

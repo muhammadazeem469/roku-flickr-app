@@ -32,13 +32,8 @@ end function
 ' NOTE: This version needs to be called from MainScene with scene context
 ' ******************************************************
 function MainViewModel_CategoryLoader_loadAllCategories(viewModel as Object) as Void
-    print "[CategoryLoader] ========================================="
-    print "[CategoryLoader] LOADING ALL CATEGORIES (Hybrid Strategy)"
-    print "[CategoryLoader] ========================================="
-    
-    if viewModel.categories.Count() = 0 then
-        print "[CategoryLoader] ERROR: No categories to load"
-        viewModel.stateManager.setGlobalError(viewModel, "No categories configured")
+if viewModel.categories.Count() = 0 then
+viewModel.stateManager.setGlobalError(viewModel, "No categories configured")
         return
     end if
     
@@ -62,9 +57,6 @@ function MainViewModel_CategoryLoader_loadAllCategories(viewModel as Object) as 
     else
         viewModel.loadQueue = viewModel.categoriesToLoad
     end if
-    
-    print "[CategoryLoader] Load queue prepared with "; viewModel.loadQueue.Count(); " categories"
-    print "[CategoryLoader] NOTE: Actual loading must be triggered from MainScene"
 end function
 
 
@@ -72,12 +64,8 @@ end function
 ' Load category data - synchronous version for testing only
 ' ******************************************************
 function MainViewModel_CategoryLoader_loadCategory(viewModel as Object, categoryIndex as Integer) as Void
-    print "[CategoryLoader] WARNING: loadCategory is synchronous and for testing only"
-    print "[CategoryLoader] Use loadCategoryWithTask from MainScene for production"
-    
-    ' Validate index
+' Validate index
     if categoryIndex < 0 or categoryIndex >= viewModel.categories.Count() then
-        print "[CategoryLoader] ERROR: Invalid category index: "; categoryIndex
         return
     end if
 
@@ -93,21 +81,12 @@ end function
 ' Load category using Task (called from MainScene)
 ' ******************************************************
 function MainViewModel_CategoryLoader_loadCategoryWithTask(viewModel as Object, categoryIndex as Integer, scene as Object) as Object
-    print "[CategoryLoader] ========================================="
-    print "[CategoryLoader] LOADING CATEGORY WITH TASK: "; categoryIndex
-    print "[CategoryLoader] ========================================="
-
-    ' Validate index
+' Validate index
     if categoryIndex < 0 or categoryIndex >= viewModel.categories.Count() then
-        print "[CategoryLoader] ERROR: Invalid category index: "; categoryIndex
         return invalid
     end if
 
     category = viewModel.categories[categoryIndex]
-    
-    print "[CategoryLoader] Category: "; category.display_name
-    print "[CategoryLoader] Method: "; category.method
-    print "[CategoryLoader] Tags: "; category.tags
 
     ' Set loading state
     category = category.setLoading(true)
@@ -117,8 +96,7 @@ function MainViewModel_CategoryLoader_loadCategoryWithTask(viewModel as Object, 
     ' Validate method and tags
     if category.method = "flickr.photos.search" then
         if category.tags = invalid or category.tags = "" then
-            print "[CategoryLoader] ERROR: Search method requires tags"
-            MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, "Tags required for search")
+MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, "Couldn't load images. Please try again later.", "API_ERROR")
             return invalid
         end if
     end if
@@ -127,8 +105,7 @@ function MainViewModel_CategoryLoader_loadCategoryWithTask(viewModel as Object, 
     task = scene.createChild("CategoryLoadTask")
     
     if task = invalid then
-        print "[CategoryLoader] ERROR: Failed to create CategoryLoadTask"
-        MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, "Failed to create task")
+MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, "Couldn't load images. Please try again later.", "API_ERROR")
         return invalid
     end if
     
@@ -141,10 +118,7 @@ function MainViewModel_CategoryLoader_loadCategoryWithTask(viewModel as Object, 
     ' Store category index on task for callback
     task.addField("categoryIndex", "integer", false)
     task.categoryIndex = categoryIndex
-    
-    print "[CategoryLoader] Task created, starting..."
-    
-    ' Return task so MainScene can observe it
+' Return task so MainScene can observe it
     return task
 end function
 
@@ -154,52 +128,43 @@ end function
 ' ******************************************************
 function MainViewModel_CategoryLoader_parseApiResponse(viewModel as Object, categoryIndex as Integer, result as Object) as Void
     category = viewModel.categories[categoryIndex]
-    
-    print "[CategoryLoader] ========================================="
-    print "[CategoryLoader] PARSING API RESPONSE"
-    print "[CategoryLoader] Category: "; category.display_name
-    print "[CategoryLoader] ========================================="
-    
-    ' Check if API call was successful
+' Check if API call was successful
     if not result.success then
-        print "[CategoryLoader] API Error: "; result.error
-        MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, result.error)
+
+        ' FG-022: Use the errorType set by CategoryLoadTask to pick
+        ' the correct user-facing message per the ticket spec.
+        errorType = ""
+        if result.errorType <> invalid then errorType = result.errorType
+
+        userMessage = MainViewModel_CategoryLoader_getUserMessage(errorType, result.error)
+        MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, userMessage, errorType)
         return
     end if
-    
+
     ' Validate data array
     if result.data = invalid then
-        print "[CategoryLoader] ERROR: Invalid data in response"
-        MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, "Invalid response data")
+MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, "Couldn't load images. Please try again later.", "API_ERROR")
         return
     end if
-    
+
     photoCount = result.data.Count()
-    print "[CategoryLoader] Received "; photoCount; " photos from API"
-    
-    if photoCount = 0 then
-        print "[CategoryLoader] WARNING: No photos returned for category"
-        MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, "No photos available")
+if photoCount = 0 then
+MainViewModel_CategoryLoader_handleApiError(viewModel, categoryIndex, "No images found in this category.", "EMPTY")
         return
     end if
     
     ' FlickrService already converted photos to ImageModel objects
     ' result.data is an array of ImageModels ready to use
-    print "[CategoryLoader] Validating "; photoCount; " ImageModel objects..."
-    images = []
+images = []
     
     for each imageModel in result.data
         ' Validate image has required fields
         if imageModel.id <> "" and imageModel.url_thumbnail <> "" then
             images.Push(imageModel)
         else
-            print "[CategoryLoader] WARNING: Skipping invalid image (missing id or thumbnail)"
-        end if
+end if
     end for
-    
-    print "[CategoryLoader] Successfully validated "; images.Count(); " images"
-    
-    ' Update category with images
+' Update category with images
     imgManager = CategoryImageManager()
     category = imgManager.addImages(category, images)
     
@@ -207,7 +172,6 @@ function MainViewModel_CategoryLoader_parseApiResponse(viewModel as Object, cate
     pagManager = CategoryPaginationManager()
     if result.pages <> invalid and result.pages > 0 then
         category = pagManager.setTotalPages(category, result.pages)
-        print "[CategoryLoader] Total pages available: "; result.pages
     end if
     
     ' Clear loading state and mark as loaded
@@ -219,37 +183,51 @@ function MainViewModel_CategoryLoader_parseApiResponse(viewModel as Object, cate
     
     ' Trigger view update
     viewModel.categoryDataChanged = not viewModel.categoryDataChanged
-    
-    print "[CategoryLoader] ========================================="
-    print "[CategoryLoader] Category "; category.display_name; " loaded successfully!"
-    print "[CategoryLoader] Images: "; images.Count()
-    print "[CategoryLoader] ========================================="
 end function
 
 
 ' ******************************************************
 ' Handle API errors gracefully
+' FG-022: errorType ("NETWORK" | "API_ERROR" | "EMPTY") is
+' stored on the category so MainScene can decide whether to
+' offer a retry button and which icon/style to show.
 ' ******************************************************
-function MainViewModel_CategoryLoader_handleApiError(viewModel as Object, categoryIndex as Integer, errorMessage as String) as Void
+function MainViewModel_CategoryLoader_handleApiError(viewModel as Object, categoryIndex as Integer, errorMessage as String, errorType as String) as Void
     category = viewModel.categories[categoryIndex]
-    
-    print "[CategoryLoader] ========================================="
-    print "[CategoryLoader] HANDLING ERROR"
-    print "[CategoryLoader] Category: "; category.display_name
-    print "[CategoryLoader] Error: "; errorMessage
-    print "[CategoryLoader] ========================================="
-    
-    ' Clear loading state and set error
+' Clear loading state and set error
     category = category.setLoading(false)
     category = category.setError(errorMessage)
-    
+
+    ' FG-022: Store errorType so the UI layer can tailor the display
+    category.errorType = errorType
+
     ' Update category in viewModel
     viewModel.categories[categoryIndex] = category
-    
+
     ' Trigger view update
     viewModel.categoryDataChanged = not viewModel.categoryDataChanged
-    
-    print "[CategoryLoader] Error state set for category"
+end function
+
+
+' ******************************************************
+' FG-022: Map errorType → user-facing message per ticket spec.
+' Falls back to the raw message when type is unrecognised.
+' ******************************************************
+function MainViewModel_CategoryLoader_getUserMessage(errorType as String, rawMessage as String) as String
+    if errorType = "NETWORK" then
+        return "Unable to connect. Check your internet connection."
+    else if errorType = "EMPTY" then
+        return "No images found in this category."
+    else if errorType = "API_ERROR" then
+        return "Couldn't load images. Please try again later."
+    end if
+
+    ' Unknown type — surface the raw message so nothing is silently swallowed
+    if rawMessage <> invalid and rawMessage <> "" then
+        return rawMessage
+    end if
+
+    return "Couldn't load images. Please try again later."
 end function
 
 
@@ -257,13 +235,8 @@ end function
 ' Refresh category data (clear and reload)
 ' ******************************************************
 function MainViewModel_CategoryLoader_refreshCategory(viewModel as Object, categoryIndex as Integer) as Void
-    print "[CategoryLoader] ========================================="
-    print "[CategoryLoader] REFRESHING CATEGORY: "; categoryIndex
-    print "[CategoryLoader] ========================================="
-
-    if categoryIndex < 0 or categoryIndex >= viewModel.categories.Count() then
-        print "[CategoryLoader] ERROR: Invalid category index"
-        return
+if categoryIndex < 0 or categoryIndex >= viewModel.categories.Count() then
+return
     end if
 
     category = viewModel.categories[categoryIndex]
@@ -283,7 +256,6 @@ function MainViewModel_CategoryLoader_refreshCategory(viewModel as Object, categ
     viewModel.categories[categoryIndex] = category
 
     ' Note: Actual reload must be done from MainScene using loadCategoryWithTask
-    print "[CategoryLoader] Category cleared, ready for reload from MainScene"
 end function
 
 

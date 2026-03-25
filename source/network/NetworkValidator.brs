@@ -10,18 +10,14 @@ function NetworkValidator_isAvailable() as Boolean
     device = CreateObject("roDeviceInfo")
     
     if device = invalid then
-        print "[NetworkValidator] WARNING: Could not create roDeviceInfo"
-        return true  ' Assume available
+return true  ' Assume available
     end if
     
     connectionType = device.GetConnectionType()
     
     if connectionType = "WiredConnection" or connectionType = "WiFiConnection" then
-        print "[NetworkValidator] Network available: "; connectionType
         return true
     end if
-    
-    print "[NetworkValidator] Network unavailable: "; connectionType
     return false
 end function
 
@@ -40,8 +36,6 @@ function NetworkValidator_validateResponse(request as Object) as Boolean
     if statusCode >= 200 and statusCode < 300 then
         return true
     end if
-    
-    print "[NetworkValidator] Invalid status: "; statusCode
     return false
 end function
 
@@ -56,14 +50,12 @@ function NetworkValidator_validateUrl(url as String) as Boolean
     
     ' Check for http/https
     if url.Instr("http://") <> 0 and url.Instr("https://") <> 0 then
-        print "[NetworkValidator] URL must start with http:// or https://"
-        return false
+return false
     end if
     
     ' Basic length check
     if url.Len() < 10 then
-        print "[NetworkValidator] URL too short"
-        return false
+return false
     end if
     
     return true

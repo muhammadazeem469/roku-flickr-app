@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ******************************************************
+  ** ErrorRowItem.xml
+  ** FG-022: Item component for RowList error rows.
+  ** RowList passes data via itemContent field.
+  ** This component reads itemContent.errorMessage and
+  ** itemContent.canRetry to render the error state.
+  ****************************************************** -->
+
+<component name="ErrorRowItem" extends="Group">
+    <interface>
+        <!-- RowList sets this automatically when itemComponentName is used -->
+        <field id="itemContent" type="node" alwaysNotify="true" />
+        <field id="itemHasFocus" type="boolean" value="false" alwaysNotify="true" />
+    </interface>
+
+    <children>
+        <!-- Background -->
+        <Rectangle
+            id="bg"
+            translation="[0, 0]"
+            width="1740"
+            height="210"
+            color="0x1A1A2EFF"
+        />
+
+        <!-- Left red accent bar -->
+        <Rectangle
+            id="accentBar"
+            translation="[0, 0]"
+            width="6"
+            height="210"
+            color="0xFF4444FF"
+        />
+
+        <!-- Focus highlight border (hidden by default) -->
+        <Rectangle
+            id="focusBorder"
+            translation="[0, 0]"
+            width="1740"
+            height="210"
+            color="0xFFFFFF22"
+            visible="false"
+        />
+
+        <!-- Error icon -->
+        <Label
+            id="icon"
+            translation="[24, 0]"
+            width="60"
+            height="210"
+            horizAlign="center"
+            vertAlign="center"
+            font="font:LargeBoldSystemFont"
+            color="0xFF6666FF"
+            text="!"
+        />
+
+        <!-- Error message -->
+        <Label
+            id="msgLabel"
+            translation="[100, 75]"
+            width="1580"
+            height="70"
+            horizAlign="left"
+            vertAlign="center"
+            font="font:MediumBoldSystemFont"
+            color="0xFFFFFFFF"
+            text=""
+        />
+
+        <!-- Retry hint -->
+        <Label
+            id="retryLabel"
+            translation="[100, 148]"
+            width="1580"
+            height="40"
+            horizAlign="left"
+            vertAlign="center"
+            font="font:SmallSystemFont"
+            color="0x888888FF"
+            text="Press OK to retry"
+            visible="false"
+        />
+    </children>
+
+    <script type="text/brightscript" uri="pkg:/components/ErrorRowItem.brs" />
+</component>

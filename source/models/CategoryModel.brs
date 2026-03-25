@@ -56,7 +56,6 @@ end function
 function CategoryModel_setLoading(state as Boolean) as Object
     m.isLoading = state
     if state then
-        print "[CategoryModel] Loading: "; m.name
     end if
     return m
 end function
@@ -65,8 +64,7 @@ end function
 function CategoryModel_setLoaded(state as Boolean) as Object
     m.isLoaded = state
     if state then
-        print "[CategoryModel] Loaded: "; m.name; " with "; m.images.Count(); " images"
-    end if
+end if
     return m
 end function
 
@@ -75,7 +73,6 @@ function CategoryModel_setError(message as String) as Object
     m.hasError    = true
     m.errorMessage = message
     m.isLoading   = false
-    print "[CategoryModel] Error in "; m.name; ": "; message
     return m
 end function
 
