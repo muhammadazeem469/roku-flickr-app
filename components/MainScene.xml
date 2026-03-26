@@ -43,6 +43,7 @@
             width="1920"
             height="1080"
             color="0x111111FF"
+            opacity="0"
             visible="true"
         />
 
