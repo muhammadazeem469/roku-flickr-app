@@ -10,7 +10,7 @@ sub init()
     m.contentGroup = m.top.findNode("contentGroup")
     m.loadingGroup = m.top.findNode("loadingGroup")
     m.errorGroup = m.top.findNode("errorGroup")
-    
+
     ' Image and metadata
     m.largeImage = m.top.findNode("largeImage")
     m.titleLabel = m.top.findNode("titleLabel")
@@ -21,7 +21,7 @@ sub init()
     m.dateLabel = m.top.findNode("dateLabel")
     m.viewsLabel = m.top.findNode("viewsLabel")
     m.commentsLabel = m.top.findNode("commentsLabel")
-    
+
     ' Loading and error
     m.loadingSpinner = m.top.findNode("loadingSpinner")
     m.loadingLabel = m.top.findNode("loadingLabel")
@@ -29,6 +29,20 @@ sub init()
 
     ' Initialize ViewModel reference
     m.viewModel = invalid
+
+    ' Assign a stable ID so animations can target this node's translation
+    m.top.id = "detailSceneNode"
+
+    ' Slide in from right (300ms, outCubic)
+    m.top.translation = [1920, 0]
+    slideInAnim = m.top.createChild("Animation")
+    slideInAnim.duration     = 0.3
+    slideInAnim.easeFunction = "outCubic"
+    slideInInterp = slideInAnim.createChild("Vector2DFieldInterpolator")
+    slideInInterp.key           = [0.0, 1.0]
+    slideInInterp.keyValue      = [[1920.0, 0.0], [0.0, 0.0]]
+    slideInInterp.fieldToInterp = "detailSceneNode.translation"
+    slideInAnim.control = "start"
 
     ' Set focus to scene
     m.top.setFocus(true)
@@ -299,7 +313,7 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
     if not press then return false
 
     if key = "back" then
-cleanup()
+        cleanup()
         m.top.closeRequested = true
         return true
     end if

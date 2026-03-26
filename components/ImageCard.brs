@@ -31,6 +31,7 @@ sub init()
     m.imageLoaded = false
     m.hasError    = false
     m.fadeAnim    = invalid
+    m.borderAnim  = invalid
 
     ' Apply initial size
     updateCardSize()
@@ -193,18 +194,30 @@ end sub
 ' Apply focused visual state
 ' ******************************************************
 sub applyFocusedState()
-    m.focusBorder.opacity = 1.0
+    ' Animate focus border fade-in (150ms)
+    if m.borderAnim <> invalid then
+        m.borderAnim.control = "stop"
+        m.top.removeChild(m.borderAnim)
+        m.borderAnim = invalid
+    end if
+    borderAnim = m.top.createChild("Animation")
+    borderAnim.duration     = 0.15
+    borderAnim.easeFunction = "linear"
+    borderInterp = borderAnim.createChild("FloatFieldInterpolator")
+    borderInterp.key           = [0.0, 1.0]
+    borderInterp.keyValue      = [m.focusBorder.opacity, 1.0]
+    borderInterp.fieldToInterp = "focusBorder.opacity"
+    m.borderAnim = borderAnim
+    borderAnim.control = "start"
 
-    ' Animate scale using node ID
+    ' Animate scale 1.0 → 1.1 (200ms)
     scaleAnimation = m.top.createChild("Animation")
     scaleAnimation.duration     = 0.2   ' UIConfig.ANIMATION.FAST
     scaleAnimation.easeFunction = "outCubic"
-
     scaleInterpolator = scaleAnimation.createChild("Vector2DFieldInterpolator")
-    scaleInterpolator.key        = [0, 1]
-    scaleInterpolator.keyValue   = [[1.0, 1.0], [1.05, 1.05]]
+    scaleInterpolator.key           = [0, 1]
+    scaleInterpolator.keyValue      = [[1.0, 1.0], [1.1, 1.1]]
     scaleInterpolator.fieldToInterp = m.top.id + ".scale"
-
     scaleAnimation.control = "start"
 
     if m.top.showTitle then
@@ -217,18 +230,30 @@ end sub
 ' Apply unfocused visual state
 ' ******************************************************
 sub applyUnfocusedState()
-    m.focusBorder.opacity = 0.0
+    ' Animate focus border fade-out (150ms)
+    if m.borderAnim <> invalid then
+        m.borderAnim.control = "stop"
+        m.top.removeChild(m.borderAnim)
+        m.borderAnim = invalid
+    end if
+    borderAnim = m.top.createChild("Animation")
+    borderAnim.duration     = 0.15
+    borderAnim.easeFunction = "linear"
+    borderInterp = borderAnim.createChild("FloatFieldInterpolator")
+    borderInterp.key           = [0.0, 1.0]
+    borderInterp.keyValue      = [m.focusBorder.opacity, 0.0]
+    borderInterp.fieldToInterp = "focusBorder.opacity"
+    m.borderAnim = borderAnim
+    borderAnim.control = "start"
 
-    ' Animate scale using node ID
+    ' Animate scale 1.1 → 1.0 (200ms)
     scaleAnimation = m.top.createChild("Animation")
     scaleAnimation.duration     = 0.2   ' UIConfig.ANIMATION.FAST
     scaleAnimation.easeFunction = "inCubic"
-
     scaleInterpolator = scaleAnimation.createChild("Vector2DFieldInterpolator")
-    scaleInterpolator.key        = [0, 1]
-    scaleInterpolator.keyValue   = [[1.05, 1.05], [1.0, 1.0]]
+    scaleInterpolator.key           = [0, 1]
+    scaleInterpolator.keyValue      = [[1.1, 1.1], [1.0, 1.0]]
     scaleInterpolator.fieldToInterp = m.top.id + ".scale"
-
     scaleAnimation.control = "start"
 
     updateTitleVisibility()
