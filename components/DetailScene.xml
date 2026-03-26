@@ -59,8 +59,8 @@
             <!-- Title -->
             <Label
                 id="titleLabel"
-                translation="[1330, 120]"
-                width="500"
+                translation="[1340, 140]"
+                width="480"
                 height="0"
                 font="font:LargeBoldSystemFont"
                 color="0xFFFFFF"
@@ -72,7 +72,7 @@
             <!-- Description Label Header -->
             <Label
                 id="descriptionHeader"
-                translation="[1330, 240]"
+                translation="[1340, 260]"
                 text="Description"
                 font="font:MediumBoldSystemFont"
                 color="0xCCCCCC"
@@ -81,8 +81,8 @@
             <!-- Description (scrollable if long) -->
             <Label
                 id="descriptionLabel"
-                translation="[1330, 280]"
-                width="500"
+                translation="[1340, 295]"
+                width="480"
                 height="200"
                 font="font:SmallSystemFont"
                 color="0xBBBBBB"
@@ -93,7 +93,7 @@
             <!-- Metadata Section -->
             <Label
                 id="metadataHeader"
-                translation="[1330, 500]"
+                translation="[1340, 515]"
                 text="Details"
                 font="font:MediumBoldSystemFont"
                 color="0xCCCCCC"
@@ -102,8 +102,8 @@
             <!-- Dimensions -->
             <Label
                 id="dimensionsLabel"
-                translation="[1330, 540]"
-                width="500"
+                translation="[1340, 555]"
+                width="480"
                 font="font:SmallSystemFont"
                 color="0xBBBBBB"
             />
@@ -111,8 +111,8 @@
             <!-- File Size -->
             <Label
                 id="fileSizeLabel"
-                translation="[1330, 575]"
-                width="500"
+                translation="[1340, 590]"
+                width="480"
                 font="font:SmallSystemFont"
                 color="0xBBBBBB"
             />
@@ -120,8 +120,8 @@
             <!-- Owner -->
             <Label
                 id="ownerLabel"
-                translation="[1330, 610]"
-                width="500"
+                translation="[1340, 625]"
+                width="480"
                 font="font:SmallSystemFont"
                 color="0xBBBBBB"
             />
@@ -129,8 +129,8 @@
             <!-- Upload Date -->
             <Label
                 id="dateLabel"
-                translation="[1330, 645]"
-                width="500"
+                translation="[1340, 660]"
+                width="480"
                 font="font:SmallSystemFont"
                 color="0xBBBBBB"
             />
@@ -138,8 +138,8 @@
             <!-- Views -->
             <Label
                 id="viewsLabel"
-                translation="[1330, 680]"
-                width="500"
+                translation="[1340, 695]"
+                width="480"
                 font="font:SmallSystemFont"
                 color="0xBBBBBB"
             />
@@ -147,8 +147,8 @@
             <!-- Comments (if available) -->
             <Label
                 id="commentsLabel"
-                translation="[1330, 715]"
-                width="500"
+                translation="[1340, 730]"
+                width="480"
                 font="font:SmallSystemFont"
                 color="0xBBBBBB"
                 visible="false"
@@ -157,7 +157,7 @@
             <!-- Back Button Hint -->
             <Label
                 id="backHint"
-                translation="[1330, 950]"
+                translation="[1340, 940]"
                 text="Press BACK to return"
                 font="font:SmallSystemFont"
                 color="0x888888"

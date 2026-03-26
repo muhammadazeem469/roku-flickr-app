@@ -80,7 +80,7 @@
             id="focusBorder"
             width="250"
             height="250"
-            color="0x00FF00"
+            color="0xFF6B9D"
             opacity="0.0"
         >
             <Rectangle

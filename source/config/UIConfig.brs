@@ -5,11 +5,11 @@ function GetUIConfig() as Object
         ' ===== Color Scheme =====
         COLORS: {
             BACKGROUND: "0x000000"          ' Black
-            PRIMARY: "0x0099FF"             ' Blue
-            SECONDARY: "0x555555"           ' Dark Gray
+            PRIMARY: "0xFF6B9D"             ' Pink
+            SECONDARY: "0x4A90E2"           ' Blue
             TEXT_PRIMARY: "0xFFFFFF"        ' White
             TEXT_SECONDARY: "0xCCCCCC"      ' Light Gray
-            FOCUS_RING: "0x00FF00"          ' Green
+            FOCUS_RING: "0xFF6B9D"          ' Pink (matches primary)
             ERROR: "0xFF0000"               ' Red
             SUCCESS: "0x00AA00"             ' Dark Green
             OVERLAY: "0x000000CC"           ' Semi-transparent black
@@ -32,9 +32,9 @@ function GetUIConfig() as Object
             ITEM_WIDTH: 400
             ITEM_HEIGHT: 300
             SPACING: 20
-            PADDING_LEFT: 60
+            PADDING_LEFT: 20
             PADDING_TOP: 100
-            ROW_SPACING: 40     ' Space between swimlane rows
+            ROW_SPACING: 30     ' Space between swimlane rows
         }
         
         ' ===== Detail Screen Layout =====
@@ -42,7 +42,7 @@ function GetUIConfig() as Object
             IMAGE_WIDTH: 1200
             IMAGE_HEIGHT: 800
             INFO_PANEL_WIDTH: 600
-            PADDING: 60
+            PADDING: 40
         }
         
         ' ===== Typography =====

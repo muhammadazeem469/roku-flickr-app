@@ -505,8 +505,8 @@ sub configureRowList()
     m.rowList.rowHeights               = [290]
     m.rowList.drawFocusFeedback        = true
     m.rowList.drawFocusFeedbackOnTop   = true
-    m.rowList.focusFootprintBlendColor = "0x00FF00FF"
-    m.rowList.focusBitmapBlendColor    = "0x00FF00FF"
+    m.rowList.focusFootprintBlendColor = "0xFF6B9DFF"
+    m.rowList.focusBitmapBlendColor    = "0xFF6B9DFF"
     m.rowList.rowLabelColor            = "0xCCCCCCCC"
     ' FG-022: rowLabelColor is per-row settable — we override
     ' individual rows to red when showing error messages.
