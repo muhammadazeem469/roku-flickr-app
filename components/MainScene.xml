@@ -23,7 +23,7 @@
         <Label
             id="appTitle"
             text="Flickr Gallery"
-            translation="[60, 30]"
+            translation="[20, 30]"
             width="1800"
             height="50"
             font="font:LargeBoldSystemFont"
@@ -179,13 +179,13 @@
              ============================================ -->
         <RowList
             id="categoryRowList"
-            translation="[10, 100]"
+            translation="[20, 100]"
             visible="false"
             itemSize="[1800, 210]"
             rowItemSize="[[280, 210]]"
-            itemSpacing="[0, 80]"
+            itemSpacing="[0, 70]"
             numRows="3"
-            rowItemSpacing="[[30, 0]]"
+            rowItemSpacing="[[20, 0]]"
             focusXOffset="[10]"
             showRowLabel="[true]"
             rowLabelOffset="[[0, 20]]"
