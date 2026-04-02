@@ -27,7 +27,16 @@
             width="1800"
             height="50"
             font="font:LargeBoldSystemFont"
-            color="0xFFFFFF"
+            color="0xFF6B9DFF"
+        />
+
+        <!-- Pink accent rule under the title -->
+        <Rectangle
+            id="titleAccent"
+            translation="[20, 84]"
+            width="140"
+            height="3"
+            color="0xFF6B9DFF"
         />
 
         <!-- ============================================
@@ -42,7 +51,7 @@
             translation="[0, 0]"
             width="1920"
             height="1080"
-            color="0x111111FF"
+            color="0x000000FF"
             opacity="0"
             visible="true"
         />
@@ -169,7 +178,7 @@
             horizAlign="center"
             vertAlign="center"
             font="font:MediumSystemFont"
-            color="0xFF4444"
+            color="0xFF6666FF"
             visible="false"
         />
 
@@ -181,6 +190,7 @@
             id="categoryRowList"
             translation="[20, 100]"
             visible="false"
+            itemComponentName="ImageCard"
             itemSize="[1800, 210]"
             rowItemSize="[[280, 210]]"
             itemSpacing="[0, 70]"
@@ -190,7 +200,7 @@
             showRowLabel="[true]"
             rowLabelOffset="[[0, 20]]"
             drawFocusFeedback="true"
-            drawFocusFeedbackOnTop="false"
+            drawFocusFeedbackOnTop="true"
             rowFocusAnimationStyle="floatingFocus"
             vertFocusAnimationStyle="floatingFocus"
         />
