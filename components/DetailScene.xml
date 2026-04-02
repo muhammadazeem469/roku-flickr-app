@@ -53,127 +53,182 @@
                 translation="[1300, 100]"
                 width="560"
                 height="920"
-                color="0x101010"
+                color="0x0D0D0DFF"
             />
 
-            <!-- Title -->
+            <!-- Pink accent bar at top of metadata panel -->
+            <Rectangle
+                id="panelAccent"
+                translation="[1300, 100]"
+                width="560"
+                height="4"
+                color="0xFF6B9DFF"
+            />
+
+            <!-- Title: wraps to 2 lines max; ellipsizeOnBoundary adds ... on the last line
+                 No explicit height — Roku auto-sizes to the visible lines so the
+                 height constraint never fights with ellipsizeOnBoundary -->
             <Label
                 id="titleLabel"
-                translation="[1330, 120]"
-                width="500"
-                height="0"
+                translation="[1340, 120]"
+                width="480"
                 font="font:LargeBoldSystemFont"
-                color="0xFFFFFF"
+                color="0xFFFFFFFF"
                 wrap="true"
-                maxLines="3"
-                lineSpacing="-5"
+                maxLines="2"
+                ellipsizeOnBoundary="true"
             />
 
-            <!-- Description Label Header -->
+            <!-- Description section header — sits 40px below max title height (2 lines ~80px → y=240) -->
             <Label
                 id="descriptionHeader"
-                translation="[1330, 240]"
+                translation="[1340, 238]"
                 text="Description"
                 font="font:MediumBoldSystemFont"
-                color="0xCCCCCC"
+                color="0xFF6B9DFF"
             />
 
-            <!-- Description (scrollable if long) -->
+            <!-- Divider below description header (header ~30px tall → y=268 + 8px gap = 276) -->
+            <Rectangle
+                id="descDivider"
+                translation="[1340, 276]"
+                width="480"
+                height="1"
+                color="0x2A2A2AFF"
+            />
+
+            <!-- Description text — 14px below divider -->
             <Label
                 id="descriptionLabel"
-                translation="[1330, 280]"
-                width="500"
-                height="200"
+                translation="[1340, 290]"
+                width="480"
+                height="168"
                 font="font:SmallSystemFont"
-                color="0xBBBBBB"
+                color="0xCCCCCCFF"
                 wrap="true"
-                lineSpacing="-2"
             />
 
-            <!-- Metadata Section -->
+            <!-- Details section header — 20px below description text (290+168=458 + 20 = 478) -->
             <Label
                 id="metadataHeader"
-                translation="[1330, 500]"
+                translation="[1340, 478]"
                 text="Details"
                 font="font:MediumBoldSystemFont"
-                color="0xCCCCCC"
+                color="0xFF6B9DFF"
             />
 
-            <!-- Dimensions -->
-            <Label
-                id="dimensionsLabel"
-                translation="[1330, 540]"
-                width="500"
-                font="font:SmallSystemFont"
-                color="0xBBBBBB"
+            <!-- Divider below Details heading (478 + 30px header height + 8px gap = 516) -->
+            <Rectangle
+                id="detailsDivider"
+                translation="[1340, 516]"
+                width="480"
+                height="1"
+                color="0x2A2A2AFF"
             />
 
-            <!-- File Size -->
-            <Label
-                id="fileSizeLabel"
-                translation="[1330, 575]"
-                width="500"
-                font="font:SmallSystemFont"
-                color="0xBBBBBB"
-            />
-
-            <!-- Owner -->
+            <!-- Owner — first label below divider, 14px gap (516 + 14 = 530) -->
             <Label
                 id="ownerLabel"
-                translation="[1330, 610]"
-                width="500"
+                translation="[1340, 530]"
+                width="480"
                 font="font:SmallSystemFont"
-                color="0xBBBBBB"
+                color="0xCCCCCCFF"
             />
 
-            <!-- Upload Date -->
+            <!-- Dimensions — 32px below owner (530 + 32 = 562) -->
+            <Label
+                id="dimensionsLabel"
+                translation="[1340, 562]"
+                width="480"
+                font="font:SmallSystemFont"
+                color="0xCCCCCCFF"
+            />
+
+            <!-- File Size — 32px below dimensions (562 + 32 = 594) -->
+            <Label
+                id="fileSizeLabel"
+                translation="[1340, 594]"
+                width="480"
+                font="font:SmallSystemFont"
+                color="0xCCCCCCFF"
+            />
+
+            <!-- Upload Date — 32px below file size (594 + 32 = 626) -->
             <Label
                 id="dateLabel"
-                translation="[1330, 645]"
-                width="500"
+                translation="[1340, 626]"
+                width="480"
                 font="font:SmallSystemFont"
-                color="0xBBBBBB"
+                color="0xCCCCCCFF"
             />
 
-            <!-- Views -->
+            <!-- Views — 32px below date (626 + 32 = 658) -->
             <Label
                 id="viewsLabel"
-                translation="[1330, 680]"
-                width="500"
+                translation="[1340, 658]"
+                width="480"
                 font="font:SmallSystemFont"
-                color="0xBBBBBB"
+                color="0xCCCCCCFF"
             />
 
-            <!-- Comments (if available) -->
+            <!-- Comments (if available) — 32px below views (658 + 32 = 690) -->
             <Label
                 id="commentsLabel"
-                translation="[1330, 715]"
-                width="500"
+                translation="[1340, 690]"
+                width="480"
                 font="font:SmallSystemFont"
-                color="0xBBBBBB"
+                color="0xCCCCCCFF"
                 visible="false"
             />
 
             <!-- Back Button Hint -->
             <Label
                 id="backHint"
-                translation="[1330, 950]"
-                text="Press BACK to return"
+                translation="[1340, 980]"
+                text="← BACK to return"
                 font="font:SmallSystemFont"
-                color="0x888888"
+                color="0x666666FF"
             />
         </Group>
 
         <!-- Loading State -->
         <Group id="loadingGroup" visible="true">
-            <BusySpinner
+            <!-- Custom dot-ring spinner — BusySpinner requires pkg:/images/spinner.png
+                 which does not exist and is unreliable across firmware versions.
+                 Mirrors the approach used in MainScene. -->
+            <Group
                 id="loadingSpinner"
-                translation="[910, 490]"
-                uri="pkg:/images/spinner.png"
-            />
+                translation="[960, 510]"
+            >
+                <Rectangle translation="[-4.0, -34.0]" width="8" height="8" color="0xFFFFFFFF" />
+                <Rectangle translation="[11.0, -30.0]" width="8" height="8" color="0xFFFFFFE9" />
+                <Rectangle translation="[22.0, -19.0]" width="8" height="8" color="0xFFFFFFD4" />
+                <Rectangle translation="[26.0, -4.0]" width="8" height="8" color="0xFFFFFFBF" />
+                <Rectangle translation="[22.0, 11.0]" width="8" height="8" color="0xFFFFFFAA" />
+                <Rectangle translation="[11.0, 22.0]" width="8" height="8" color="0xFFFFFF94" />
+                <Rectangle translation="[-4.0, 26.0]" width="8" height="8" color="0xFFFFFF7F" />
+                <Rectangle translation="[-19.0, 22.0]" width="8" height="8" color="0xFFFFFF6A" />
+                <Rectangle translation="[-30.0, 11.0]" width="8" height="8" color="0xFFFFFF55" />
+                <Rectangle translation="[-34.0, -4.0]" width="8" height="8" color="0xFFFFFF3F" />
+                <Rectangle translation="[-30.0, -19.0]" width="8" height="8" color="0xFFFFFF2A" />
+                <Rectangle translation="[-19.0, -30.0]" width="8" height="8" color="0xFFFFFF15" />
+            </Group>
+            <Animation
+                id="spinnerAnim"
+                duration="1.0"
+                easeFunction="linear"
+                repeat="true"
+            >
+                <FloatFieldInterpolator
+                    key="[0.0, 1.0]"
+                    keyValue="[0.0, 6.283185]"
+                    fieldToInterp="loadingSpinner.rotation"
+                />
+            </Animation>
             <Label
                 id="loadingLabel"
-                translation="[960, 600]"
+                translation="[0, 570]"
+                width="1920"
                 text="Loading image details..."
                 horizAlign="center"
                 font="font:MediumSystemFont"
@@ -191,7 +246,7 @@
                 horizAlign="center"
                 vertAlign="center"
                 font="font:MediumSystemFont"
-                color="0xFF4444"
+                color="0xFF6666FF"
                 wrap="true"
             />
             <Label

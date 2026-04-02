@@ -10,7 +10,7 @@ sub init()
     m.contentGroup = m.top.findNode("contentGroup")
     m.loadingGroup = m.top.findNode("loadingGroup")
     m.errorGroup = m.top.findNode("errorGroup")
-    
+
     ' Image and metadata
     m.largeImage = m.top.findNode("largeImage")
     m.titleLabel = m.top.findNode("titleLabel")
@@ -21,14 +21,26 @@ sub init()
     m.dateLabel = m.top.findNode("dateLabel")
     m.viewsLabel = m.top.findNode("viewsLabel")
     m.commentsLabel = m.top.findNode("commentsLabel")
-    
+
     ' Loading and error
     m.loadingSpinner = m.top.findNode("loadingSpinner")
-    m.loadingLabel = m.top.findNode("loadingLabel")
-    m.errorLabel = m.top.findNode("errorLabel")
+    m.spinnerAnim    = m.top.findNode("spinnerAnim")
+    m.loadingLabel   = m.top.findNode("loadingLabel")
+    m.errorLabel     = m.top.findNode("errorLabel")
 
     ' Initialize ViewModel reference
     m.viewModel = invalid
+
+    ' Start spinner immediately — loadingGroup is visible by default
+    if m.spinnerAnim <> invalid then m.spinnerAnim.control = "start"
+
+    ' Assign a stable ID so animations can target this node's translation
+    m.top.id = "detailSceneNode"
+
+    ' Start off-screen to the right — MainScene starts the slide-in
+    ' animation after appendChild + imageModel are both set, so the
+    ' render thread is never blocked mid-animation.
+    m.top.translation = [1920, 0]
 
     ' Set focus to scene
     m.top.setFocus(true)
@@ -80,14 +92,34 @@ m.viewModel = CreateDetailViewModel(imageModel)
         return
     end if
     
-    ' STEP 3: Display basic information immediately
+    ' STEP 3: Display basic information immediately (sets labels + largeImage.uri)
 displayBasicInfo()
-    
-    ' Show content immediately so image is visible
-    showContent()
-    
+
     ' STEP 4: Load extended information asynchronously
 loadExtendedInfo()
+
+    ' STEP 5: Keep loadingGroup visible until the large image has loaded.
+    ' showContent() is called from onLargeImageLoaded() once the Poster fires "ready".
+    ' If displayBasicInfo() hit the no-URL error path it already called showError()
+    ' and m.largeImage.uri is empty — skip the observer in that case.
+    if m.largeImage.uri <> "" then
+        m.largeImage.observeField("loadStatus", "onLargeImageLoaded")
+    end if
+end sub
+
+
+' ******************************************************
+' Called when largeImage Poster finishes loading or fails
+' ******************************************************
+sub onLargeImageLoaded()
+    status = m.largeImage.loadStatus
+    if status = "ready" then
+        m.largeImage.unobserveField("loadStatus")
+        showContent()
+    else if status = "failed" then
+        m.largeImage.unobserveField("loadStatus")
+        showError("Image not available")
+    end if
 end sub
 
 
@@ -95,56 +127,20 @@ end sub
 ' Display basic information (available immediately)
 ' ******************************************************
 sub displayBasicInfo()
-' Set title
-    if m.viewModel.image.title <> invalid and m.viewModel.image.title <> "" then
-        m.titleLabel.text = m.viewModel.image.title
+    m.titleLabel.text       = m.viewModel.titleText
+    m.descriptionLabel.text = m.viewModel.descriptionText
+    m.ownerLabel.text       = m.viewModel.ownerText
+    m.dimensionsLabel.text  = m.viewModel.dimensionsText
+    m.viewsLabel.text       = m.viewModel.viewsText
+    m.fileSizeLabel.text    = m.viewModel.fileSizeText
+    m.dateLabel.text        = "Uploaded: Loading..."
+    m.commentsLabel.visible = false
 
-    else
-        m.titleLabel.text = "Untitled"
-end if
-    
-    ' Set large image
-    if m.viewModel.image.url_large <> invalid and m.viewModel.image.url_large <> "" then
-
-        m.largeImage.uri = m.viewModel.image.url_large
-    else if m.viewModel.image.url_medium <> invalid and m.viewModel.image.url_medium <> "" then
-
-        m.largeImage.uri = m.viewModel.image.url_medium
-    else
-showError("Image not available")
+    if m.viewModel.imageUrl = "" then
+        showError("Image not available")
         return
     end if
-    
-    ' Set description
-    if m.viewModel.image.description <> invalid and m.viewModel.image.description <> "" then
-        m.descriptionLabel.text = m.viewModel.image.description
-    else
-        m.descriptionLabel.text = "No description available"
-    end if
-    
-    ' Set basic metadata
-    if m.viewModel.dimensions <> "" then
-        m.dimensionsLabel.text = "Dimensions: " + m.viewModel.dimensions
-    else
-        m.dimensionsLabel.text = "Dimensions: Not available"
-    end if
-    
-    if m.viewModel.image.owner <> invalid and m.viewModel.image.owner <> "" then
-        m.ownerLabel.text = "Photo by: " + m.viewModel.image.owner
-    else
-        m.ownerLabel.text = "Photo by: Unknown"
-    end if
-    
-    if m.viewModel.image.views > 0 then
-        m.viewsLabel.text = "Views: " + FormatNumber(m.viewModel.image.views)
-    else
-        m.viewsLabel.text = "Views: Not available"
-    end if
-    
-    ' File size and date will be loaded via extended info
-    m.fileSizeLabel.text = "File Size: Loading..."
-    m.dateLabel.text = "Uploaded: Loading..."
-    m.commentsLabel.visible = false
+    m.largeImage.uri = m.viewModel.imageUrl
 end sub
 
 
@@ -152,14 +148,6 @@ end sub
 ' Load extended information from API
 ' ******************************************************
 sub loadExtendedInfo()
-    ' *** TESTING OVERRIDE - uncomment ONE line to test different scenarios ***
-    ' m.viewModel.image.id = "test_success"       ' All fields present
-    ' m.viewModel.image.id = "test_minimal"       ' Missing optional fields
-    ' m.viewModel.image.id = "test_notfound"      ' Photo not found error
-    ' m.viewModel.image.id = "test_network_error" ' Network error
-    ' m.viewModel.image.id = "test_extreme"       ' Extreme values
-    ' *** END TESTING OVERRIDE ***
-
     ' Ask the ViewModel to create and configure the task.
     ' InfoLoader handles mock-ID skipping and creation errors internally.
     m.photoInfoTask = m.viewModel.loadExtendedInfo()
@@ -201,40 +189,13 @@ end sub
 ' Update UI with extended information from ViewModel
 ' ******************************************************
 sub updateExtendedInfo()
-' Update description with full version
-    if m.viewModel.fullDescription <> invalid and m.viewModel.fullDescription <> "" then
-        m.descriptionLabel.text = m.viewModel.fullDescription
-end if
-    
-    ' Update dimensions
-    if m.viewModel.dimensions <> "" then
-        m.dimensionsLabel.text = "Dimensions: " + m.viewModel.dimensions
-    end if
-    
-    ' Update file size
-    if m.viewModel.fileSize <> "" then
-        m.fileSizeLabel.text = "File Size: " + m.viewModel.fileSize
-    else
-        m.fileSizeLabel.text = "File Size: Not available"
-end if
-    
-    ' Update upload date
-    if m.viewModel.uploadDate <> "" then
-        m.dateLabel.text = "Uploaded: " + m.viewModel.uploadDate
-    else
-        m.dateLabel.text = "Uploaded: Not available"
-end if
-    
-    ' Update view count
-    if m.viewModel.viewCount > 0 then
-        m.viewsLabel.text = "Views: " + FormatNumber(m.viewModel.viewCount)
-    end if
-    
-    ' Show comment count if available
-    if m.viewModel.commentCount > 0 then
-        m.commentsLabel.text = "Comments: " + FormatNumber(m.viewModel.commentCount)
-        m.commentsLabel.visible = true
-    end if
+    m.descriptionLabel.text = m.viewModel.descriptionText
+    m.dimensionsLabel.text  = m.viewModel.dimensionsText
+    m.fileSizeLabel.text    = m.viewModel.fileSizeText
+    m.dateLabel.text        = m.viewModel.uploadDateText
+    m.viewsLabel.text       = m.viewModel.viewsText
+    m.commentsLabel.text    = m.viewModel.commentsText
+    m.commentsLabel.visible = m.viewModel.showComments
 end sub
 
 
@@ -255,10 +216,7 @@ sub showLoading(message as String)
     m.loadingGroup.visible = true
     m.contentGroup.visible = false
     m.errorGroup.visible = false
-    
-    if m.loadingSpinner <> invalid then
-        m.loadingSpinner.control = "start"
-    end if
+    if m.spinnerAnim <> invalid then m.spinnerAnim.control = "start"
 end sub
 
 
@@ -266,13 +224,10 @@ end sub
 ' Show content state
 ' ******************************************************
 sub showContent()
-m.loadingGroup.visible = false
+    m.loadingGroup.visible = false
     m.errorGroup.visible = false
     m.contentGroup.visible = true
-    
-    if m.loadingSpinner <> invalid then
-        m.loadingSpinner.control = "stop"
-    end if
+    if m.spinnerAnim <> invalid then m.spinnerAnim.control = "stop"
 end sub
 
 
@@ -280,15 +235,11 @@ end sub
 ' Show error state
 ' ******************************************************
 sub showError(message as String)
-    
     m.errorLabel.text = message
     m.errorGroup.visible = true
     m.loadingGroup.visible = false
     m.contentGroup.visible = false
-    
-    if m.loadingSpinner <> invalid then
-        m.loadingSpinner.control = "stop"
-    end if
+    if m.spinnerAnim <> invalid then m.spinnerAnim.control = "stop"
 end sub
 
 
@@ -299,7 +250,7 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
     if not press then return false
 
     if key = "back" then
-cleanup()
+        cleanup()
         m.top.closeRequested = true
         return true
     end if
@@ -312,6 +263,9 @@ end function
 ' Cleanup resources
 ' ******************************************************
 sub cleanup()
+    if m.largeImage <> invalid then
+        m.largeImage.unobserveField("loadStatus")
+    end if
 if m.photoInfoTask <> invalid then
         m.photoInfoTask.control = "STOP"
         m.photoInfoTask.unobserveField("result")

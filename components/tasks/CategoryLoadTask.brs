@@ -38,6 +38,9 @@ sub loadCategoryData()
     else if categoryMethod = "flickr.photos.getRecent" then
         m.top.result = flickrService.getRecentImages(page, perPage)
 
+    else if categoryMethod = "flickr.photos.getPopular" then
+        m.top.result = flickrService.getPopularImages(page, perPage)
+
     else
         m.top.result = ResponseBuilder_error(msgs.API, "API_ERROR")
     end if

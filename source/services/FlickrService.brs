@@ -10,6 +10,7 @@ function CreateFlickrService() as Object
         getInterestingImages: FlickrService_getInterestingImages
         searchImagesByTag:    FlickrService_searchImagesByTag
         getRecentImages:      FlickrService_getRecentImages
+        getPopularImages:     FlickrService_getPopularImages
         getImageInfo:         FlickrService_getImageInfo
 
         ' Helper modules
@@ -40,6 +41,12 @@ end function
 ' Get recent images - delegates to ApiMethods
 function FlickrService_getRecentImages(page as Integer, perPage as Integer) as Object
     return m.apiMethods.getRecentImages(page, perPage)
+end function
+
+
+' Get popular images - delegates to ApiMethods
+function FlickrService_getPopularImages(page as Integer, perPage as Integer) as Object
+    return m.apiMethods.getPopularImages(page, perPage)
 end function
 
 

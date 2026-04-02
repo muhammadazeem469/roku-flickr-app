@@ -77,7 +77,8 @@ m.viewModel = CreateMainViewModel()
     m.viewModel.loadAllCategories()
 
     ' === Detail scene reference ===
-    m.detailScene = invalid
+    m.detailScene      = invalid
+    m.detailCloseTimer = invalid
 
     ' === Start loading ===
     startCategoryLoading()
@@ -88,11 +89,23 @@ end sub
 ' Show all global loading nodes (FG-021)
 ' ******************************************************
 sub showGlobalLoading()
-    if m.loadingBackdrop <> invalid then m.loadingBackdrop.visible = true
     if m.spinnerGroup    <> invalid then m.spinnerGroup.visible    = true
     if m.loadingProgress <> invalid then m.loadingProgress.visible = true
-    ' Start rotation animation
-    if m.spinnerAnim <> invalid then m.spinnerAnim.control = "start"
+    if m.spinnerAnim     <> invalid then m.spinnerAnim.control     = "start"
+
+    ' Fade-in backdrop from transparent (200ms)
+    if m.loadingBackdrop <> invalid then
+        m.loadingBackdrop.opacity = 0.0
+        m.loadingBackdrop.visible = true
+        fadeInAnim = m.top.createChild("Animation")
+        fadeInAnim.duration     = 0.2
+        fadeInAnim.easeFunction = "linear"
+        interp = fadeInAnim.createChild("FloatFieldInterpolator")
+        interp.key           = [0.0, 1.0]
+        interp.keyValue      = [0.0, 1.0]
+        interp.fieldToInterp = "loadingBackdrop.opacity"
+        fadeInAnim.control   = "start"
+    end if
 end sub
 
 
@@ -142,22 +155,50 @@ end sub
 ' ******************************************************
 sub revealRowList()
     ' Both gates must be true
-    if not m.spinnerMinTimeElapsed then
-return
-    end if
-    if not m.firstDataReady then
-return
-    end if
+    if not m.spinnerMinTimeElapsed then return
+    if not m.firstDataReady then return
     if m.firstRowRevealed then return
     m.firstRowRevealed = true
-' Hide loading overlay
-    hideGlobalLoading()
 
-    ' Show RowList
+    ' Show RowList immediately under the fading backdrop
     m.rowList.visible = true
+
+    ' Hide spinner/label now so they don't float over the content
+    if m.spinnerGroup    <> invalid then m.spinnerGroup.visible    = false
+    if m.loadingProgress <> invalid then m.loadingProgress.visible = false
+    if m.spinnerAnim     <> invalid then m.spinnerAnim.control     = "stop"
+
+    ' Fade-out backdrop only (200ms), revealing content underneath
+    if m.loadingBackdrop <> invalid then
+        fadeOutAnim = m.top.createChild("Animation")
+        fadeOutAnim.duration     = 0.2
+        fadeOutAnim.easeFunction = "linear"
+        interp = fadeOutAnim.createChild("FloatFieldInterpolator")
+        interp.key           = [0.0, 1.0]
+        interp.keyValue      = [1.0, 0.0]
+        interp.fieldToInterp = "loadingBackdrop.opacity"
+        fadeOutAnim.control  = "start"
+    end if
+
+    ' Timer hides the backdrop node after the fade completes
+    loadingFadeTimer = CreateObject("roSGNode", "Timer")
+    loadingFadeTimer.duration = 0.2
+    loadingFadeTimer.repeat   = false
+    loadingFadeTimer.observeField("fire", "onLoadingFadeOutComplete")
+    m.loadingFadeTimer = loadingFadeTimer
+    loadingFadeTimer.control = "start"
 
     ' Transfer focus
     setRowListFocus()
+end sub
+
+
+' ******************************************************
+' Called after loading fade-out completes
+' ******************************************************
+sub onLoadingFadeOutComplete()
+    if m.loadingBackdrop <> invalid then m.loadingBackdrop.visible = false
+    m.loadingFadeTimer = invalid
 end sub
 
 
@@ -464,8 +505,8 @@ sub configureRowList()
     m.rowList.rowHeights               = [290]
     m.rowList.drawFocusFeedback        = true
     m.rowList.drawFocusFeedbackOnTop   = true
-    m.rowList.focusFootprintBlendColor = "0xFFFFFFFF"
-    m.rowList.focusBitmapBlendColor    = "0xFFFFFFFF"
+    m.rowList.focusBitmapBlendColor    = "0xFF6B9DFF"   ' pink focus box on current item
+    m.rowList.focusFootprintBlendColor = "0x00000000"   ' transparent — no per-row ghost
     m.rowList.rowLabelColor            = "0xCCCCCCCC"
     ' FG-022: rowLabelColor is per-row settable — we override
     ' individual rows to red when showing error messages.
@@ -579,16 +620,86 @@ sub openDetailScreen(imageModel as Object)
     m.detailScene = CreateObject("roSGNode", "DetailScene")
     if m.detailScene = invalid then return
 
-    m.detailScene.imageModel = imageModel
+    ' 1. Attach to scene tree — node starts off-screen at x=1920 (set in DetailScene init)
     m.detailScene.observeField("closeRequested", "onDetailClosed")
     m.top.appendChild(m.detailScene)
+
+    ' 2. Store imageModel — will be applied AFTER slide-in completes.
+    '    Setting imageModel triggers onImageModelSet() synchronously on the render
+    '    thread, which starts loading the large image (url_large/url_medium Poster)
+    '    and lays out the full contentGroup. If this runs while the animation is
+    '    also in progress the render thread is overloaded — causing the mid-animation
+    '    stutter seen on first open (image not cached). Second open is smooth because
+    '    the image is already in Roku's bitmap cache.
+    '    Fix: animate first (scene slides in showing its loading spinner), then
+    '    set imageModel once the render thread has nothing else to do.
+    m.pendingImageModel = imageModel
+
+    ' 3. Start slide-in immediately — render thread only animates a translation
+    slideInAnim = m.top.createChild("Animation")
+    slideInAnim.duration     = 0.3
+    slideInAnim.easeFunction = "outCubic"
+    slideInInterp = slideInAnim.createChild("Vector2DFieldInterpolator")
+    slideInInterp.key           = [0.0, 1.0]
+    slideInInterp.keyValue      = [[1920.0, 0.0], [0.0, 0.0]]
+    slideInInterp.fieldToInterp = "detailSceneNode.translation"
+    slideInAnim.control = "start"
+
+    ' 4. After animation finishes, hand off imageModel (matches animation duration)
+    slideInTimer = CreateObject("roSGNode", "Timer")
+    slideInTimer.duration = 0.3
+    slideInTimer.repeat   = false
+    slideInTimer.observeField("fire", "onSlideInComplete")
+    m.slideInTimer = slideInTimer
+    slideInTimer.control = "start"
 end sub
 
 
 ' ******************************************************
-' Detail closed
+' Fired when slide-in animation duration has elapsed.
+' Now safe to set imageModel — render thread is idle.
+' ******************************************************
+sub onSlideInComplete()
+    m.slideInTimer = invalid
+    if m.detailScene <> invalid and m.pendingImageModel <> invalid then
+        m.detailScene.imageModel = m.pendingImageModel
+        m.pendingImageModel = invalid
+    end if
+end sub
+
+
+' ******************************************************
+' Detail closed — slide out to right (300ms) then remove
 ' ******************************************************
 sub onDetailClosed()
+    if m.detailScene = invalid then return
+    if m.detailCloseTimer <> invalid then return  ' already sliding out
+
+    ' Slide out to right (300ms, inCubic)
+    slideOutAnim = m.top.createChild("Animation")
+    slideOutAnim.duration     = 0.3
+    slideOutAnim.easeFunction = "inCubic"
+    slideOutInterp = slideOutAnim.createChild("Vector2DFieldInterpolator")
+    slideOutInterp.key           = [0.0, 1.0]
+    slideOutInterp.keyValue      = [[0.0, 0.0], [1920.0, 0.0]]
+    slideOutInterp.fieldToInterp = "detailSceneNode.translation"
+    slideOutAnim.control = "start"
+
+    ' Remove node after animation completes
+    detailCloseTimer = CreateObject("roSGNode", "Timer")
+    detailCloseTimer.duration = 0.3
+    detailCloseTimer.repeat   = false
+    detailCloseTimer.observeField("fire", "onDetailSlideOutComplete")
+    m.detailCloseTimer = detailCloseTimer
+    detailCloseTimer.control = "start"
+end sub
+
+
+' ******************************************************
+' Remove DetailScene after slide-out animation finishes
+' ******************************************************
+sub onDetailSlideOutComplete()
+    m.detailCloseTimer = invalid
     if m.detailScene <> invalid then
         m.top.removeChild(m.detailScene)
         m.detailScene = invalid

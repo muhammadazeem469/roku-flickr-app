@@ -14,15 +14,16 @@ sub init()
     m.loadingLabel   = m.top.findNode("loadingLabel")
     m.errorLabel     = m.top.findNode("errorLabel")
     m.thumbnail      = m.top.findNode("thumbnail")
-    m.focusBorder    = m.top.findNode("focusBorder")
     m.titleLabel     = m.top.findNode("titleLabel")
 
     ' Set up observers
-    m.top.observeField("imageModel",   "onImageModelChanged")
-    m.top.observeField("showTitle",    "onShowTitleChanged")
-    m.top.observeField("cardWidth",    "onSizeChanged")
-    m.top.observeField("cardHeight",   "onSizeChanged")
-    m.top.observeField("focusedChild", "onFocusChanged")
+    m.top.observeField("imageModel",  "onImageModelChanged")
+    m.top.observeField("showTitle",   "onShowTitleChanged")
+    m.top.observeField("cardWidth",   "onSizeChanged")
+    m.top.observeField("cardHeight",  "onSizeChanged")
+
+    ' RowList item protocol observer
+    m.top.observeField("itemContent", "onItemContentChanged")
 
     ' Observe poster loading states
     m.thumbnail.observeField("loadStatus", "onImageLoadStatusChanged")
@@ -81,6 +82,27 @@ showError()
     ' Update title visibility based on showTitle setting
     updateTitleVisibility()
 end sub
+
+
+' ******************************************************
+' Called by RowList when itemComponentName is set.
+' RowList assigns the ContentNode for this item slot —
+' we reset card state then extract imageData from it.
+' ******************************************************
+sub onItemContentChanged()
+    ' Always reset to loading state first — handles card recycling
+    ' (when RowList reuses this component for a different item)
+    showLoading()
+
+    itemContent = m.top.itemContent
+    if itemContent = invalid then return
+
+    if itemContent.doesExist("imageData") then
+        m.top.imageModel = itemContent.imageData
+    end if
+end sub
+
+
 
 
 ' ******************************************************
@@ -176,74 +198,10 @@ end sub
 
 
 ' ******************************************************
-' Handle focus changes
-' ******************************************************
-sub onFocusChanged()
-    hasFocus = m.top.hasFocus()
-
-    if hasFocus then
-        applyFocusedState()
-    else
-        applyUnfocusedState()
-    end if
-end sub
-
-
-' ******************************************************
-' Apply focused visual state
-' ******************************************************
-sub applyFocusedState()
-    m.focusBorder.opacity = 1.0
-
-    ' Animate scale using node ID
-    scaleAnimation = m.top.createChild("Animation")
-    scaleAnimation.duration     = 0.2   ' UIConfig.ANIMATION.FAST
-    scaleAnimation.easeFunction = "outCubic"
-
-    scaleInterpolator = scaleAnimation.createChild("Vector2DFieldInterpolator")
-    scaleInterpolator.key        = [0, 1]
-    scaleInterpolator.keyValue   = [[1.0, 1.0], [1.05, 1.05]]
-    scaleInterpolator.fieldToInterp = m.top.id + ".scale"
-
-    scaleAnimation.control = "start"
-
-    if m.top.showTitle then
-        m.titleLabel.visible = true
-    end if
-end sub
-
-
-' ******************************************************
-' Apply unfocused visual state
-' ******************************************************
-sub applyUnfocusedState()
-    m.focusBorder.opacity = 0.0
-
-    ' Animate scale using node ID
-    scaleAnimation = m.top.createChild("Animation")
-    scaleAnimation.duration     = 0.2   ' UIConfig.ANIMATION.FAST
-    scaleAnimation.easeFunction = "inCubic"
-
-    scaleInterpolator = scaleAnimation.createChild("Vector2DFieldInterpolator")
-    scaleInterpolator.key        = [0, 1]
-    scaleInterpolator.keyValue   = [[1.05, 1.05], [1.0, 1.0]]
-    scaleInterpolator.fieldToInterp = m.top.id + ".scale"
-
-    scaleAnimation.control = "start"
-
-    updateTitleVisibility()
-end sub
-
-
-' ******************************************************
-' Update title visibility based on showTitle + focus
+' Update title visibility based on showTitle field
 ' ******************************************************
 sub updateTitleVisibility()
-    if m.top.showTitle then
-        m.titleLabel.visible = m.top.hasFocus()
-    else
-        m.titleLabel.visible = false
-    end if
+    m.titleLabel.visible = m.top.showTitle
 end sub
 
 
@@ -284,16 +242,6 @@ sub updateCardSize()
 
     m.thumbnail.width  = width
     m.thumbnail.height = height
-
-    m.focusBorder.width  = width
-    m.focusBorder.height = height
-
-    ' Update inner border rectangle (3px inset)
-    innerBorder = m.focusBorder.getChild(0)
-    if innerBorder <> invalid then
-        innerBorder.width  = width - 6
-        innerBorder.height = height - 6
-    end if
 
     m.titleLabel.width       = width
     m.titleLabel.translation = [0, height + 5]
