@@ -13,6 +13,7 @@ function FlickrService_ApiMethods() as Object
         getInterestingImages: FlickrService_ApiMethods_getInterestingImages
         searchImagesByTag:    FlickrService_ApiMethods_searchImagesByTag
         getRecentImages:      FlickrService_ApiMethods_getRecentImages
+        getPopularImages:     FlickrService_ApiMethods_getPopularImages
         getImageInfo:         FlickrService_ApiMethods_getImageInfo
         makePhotosRequest:    FlickrService_ApiMethods_makePhotosRequest
         getExtrasString:      FlickrService_ApiMethods_getExtrasString
@@ -74,6 +75,23 @@ function FlickrService_ApiMethods_getRecentImages(page as Integer, perPage as In
     
     url = BuildFlickrURL("flickr.photos.getRecent", params)
     
+    return m.makePhotosRequest(url)
+end function
+
+
+' Get popular images
+function FlickrService_ApiMethods_getPopularImages(page as Integer, perPage as Integer) as Object
+    if page <= 0 then page = m.DEFAULT_PAGE
+    if perPage <= 0 then perPage = m.DEFAULT_PER_PAGE
+
+    params = {
+        page: page.ToStr()
+        per_page: perPage.ToStr()
+        extras: m.getExtrasString()
+    }
+
+    url = BuildFlickrURL("flickr.photos.getPopular", params)
+
     return m.makePhotosRequest(url)
 end function
 

@@ -80,6 +80,13 @@ function GetCategories() as Object
             description: "Portraits and people"
         }
         {
+            name: "Popular"
+            method: "flickr.photos.getPopular"
+            tags: ""
+            display_name: "Popular"
+            description: "Most popular photos on Flickr"
+        }
+        {
             name: "Recent"
             method: "flickr.photos.getRecent"
             tags: ""

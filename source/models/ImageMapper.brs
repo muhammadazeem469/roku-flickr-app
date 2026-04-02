@@ -99,6 +99,13 @@ function ImageMapper_mapStats(model as Object, json as Object) as Object
     if json.views <> invalid then
         model.views = SafeToInt(json.views)
     end if
+
+    ' Dimensions — prefer largest size (b), fall back to medium (z)
+    if json.width_b <> invalid then model.width  = SafeToInt(json.width_b)
+    if json.height_b <> invalid then model.height = SafeToInt(json.height_b)
+    if model.width = 0 and json.width_z <> invalid then model.width  = SafeToInt(json.width_z)
+    if model.height = 0 and json.height_z <> invalid then model.height = SafeToInt(json.height_z)
+
     return model
 end function
 
