@@ -127,56 +127,20 @@ end sub
 ' Display basic information (available immediately)
 ' ******************************************************
 sub displayBasicInfo()
-' Set title
-    if m.viewModel.image.title <> invalid and m.viewModel.image.title <> "" then
-        m.titleLabel.text = m.viewModel.image.title
+    m.titleLabel.text       = m.viewModel.titleText
+    m.descriptionLabel.text = m.viewModel.descriptionText
+    m.ownerLabel.text       = m.viewModel.ownerText
+    m.dimensionsLabel.text  = m.viewModel.dimensionsText
+    m.viewsLabel.text       = m.viewModel.viewsText
+    m.fileSizeLabel.text    = m.viewModel.fileSizeText
+    m.dateLabel.text        = "Uploaded: Loading..."
+    m.commentsLabel.visible = false
 
-    else
-        m.titleLabel.text = "Untitled"
-end if
-    
-    ' Set large image
-    if m.viewModel.image.url_large <> invalid and m.viewModel.image.url_large <> "" then
-
-        m.largeImage.uri = m.viewModel.image.url_large
-    else if m.viewModel.image.url_medium <> invalid and m.viewModel.image.url_medium <> "" then
-
-        m.largeImage.uri = m.viewModel.image.url_medium
-    else
-showError("Image not available")
+    if m.viewModel.imageUrl = "" then
+        showError("Image not available")
         return
     end if
-    
-    ' Set description
-    if m.viewModel.image.description <> invalid and m.viewModel.image.description <> "" then
-        m.descriptionLabel.text = m.viewModel.image.description
-    else
-        m.descriptionLabel.text = "No description available"
-    end if
-    
-    ' Set basic metadata
-    if m.viewModel.dimensions <> "" then
-        m.dimensionsLabel.text = "Dimensions: " + m.viewModel.dimensions
-    else
-        m.dimensionsLabel.text = "Dimensions: Not available"
-    end if
-    
-    if m.viewModel.image.owner <> invalid and m.viewModel.image.owner <> "" then
-        m.ownerLabel.text = "Photo by: " + m.viewModel.image.owner
-    else
-        m.ownerLabel.text = "Photo by: Unknown"
-    end if
-    
-    if m.viewModel.image.views > 0 then
-        m.viewsLabel.text = "Views: " + FormatNumber(m.viewModel.image.views)
-    else
-        m.viewsLabel.text = "Views: Not available"
-    end if
-    
-    ' File size and date will be loaded via extended info
-    m.fileSizeLabel.text = "File Size: Loading..."
-    m.dateLabel.text = "Uploaded: Loading..."
-    m.commentsLabel.visible = false
+    m.largeImage.uri = m.viewModel.imageUrl
 end sub
 
 
@@ -184,14 +148,6 @@ end sub
 ' Load extended information from API
 ' ******************************************************
 sub loadExtendedInfo()
-    ' *** TESTING OVERRIDE - uncomment ONE line to test different scenarios ***
-    ' m.viewModel.image.id = "test_success"       ' All fields present
-    ' m.viewModel.image.id = "test_minimal"       ' Missing optional fields
-    ' m.viewModel.image.id = "test_notfound"      ' Photo not found error
-    ' m.viewModel.image.id = "test_network_error" ' Network error
-    ' m.viewModel.image.id = "test_extreme"       ' Extreme values
-    ' *** END TESTING OVERRIDE ***
-
     ' Ask the ViewModel to create and configure the task.
     ' InfoLoader handles mock-ID skipping and creation errors internally.
     m.photoInfoTask = m.viewModel.loadExtendedInfo()
@@ -233,40 +189,13 @@ end sub
 ' Update UI with extended information from ViewModel
 ' ******************************************************
 sub updateExtendedInfo()
-' Update description with full version
-    if m.viewModel.fullDescription <> invalid and m.viewModel.fullDescription <> "" then
-        m.descriptionLabel.text = m.viewModel.fullDescription
-end if
-    
-    ' Update dimensions
-    if m.viewModel.dimensions <> "" then
-        m.dimensionsLabel.text = "Dimensions: " + m.viewModel.dimensions
-    end if
-    
-    ' Update file size
-    if m.viewModel.fileSize <> "" then
-        m.fileSizeLabel.text = "File Size: " + m.viewModel.fileSize
-    else
-        m.fileSizeLabel.text = "File Size: Not available"
-end if
-    
-    ' Update upload date
-    if m.viewModel.uploadDate <> "" then
-        m.dateLabel.text = "Uploaded: " + m.viewModel.uploadDate
-    else
-        m.dateLabel.text = "Uploaded: Not available"
-end if
-    
-    ' Update view count
-    if m.viewModel.viewCount > 0 then
-        m.viewsLabel.text = "Views: " + FormatNumber(m.viewModel.viewCount)
-    end if
-    
-    ' Show comment count if available
-    if m.viewModel.commentCount > 0 then
-        m.commentsLabel.text = "Comments: " + FormatNumber(m.viewModel.commentCount)
-        m.commentsLabel.visible = true
-    end if
+    m.descriptionLabel.text = m.viewModel.descriptionText
+    m.dimensionsLabel.text  = m.viewModel.dimensionsText
+    m.fileSizeLabel.text    = m.viewModel.fileSizeText
+    m.dateLabel.text        = m.viewModel.uploadDateText
+    m.viewsLabel.text       = m.viewModel.viewsText
+    m.commentsLabel.text    = m.viewModel.commentsText
+    m.commentsLabel.visible = m.viewModel.showComments
 end sub
 
 

@@ -19,13 +19,24 @@ function CreateDetailViewModel(imageModel as Object) as Object
         hasError: false
         errorMessage: ""
         
-        ' Extended metadata (populated after loadExtendedInfo)
+        ' Extended metadata (raw values)
         dimensions: ""          ' e.g., "1024 x 768"
-        fileSize: ""            ' e.g., "2.5 MB"
-        uploadDate: ""          ' Formatted date
+        uploadDate: ""          ' Formatted date string
         viewCount: 0
         commentCount: 0
         fullDescription: ""
+
+        ' Display-ready strings — View assigns these directly to labels
+        titleText: ""
+        imageUrl: ""
+        descriptionText: ""
+        ownerText: ""
+        dimensionsText: "Dimensions: Not available"
+        fileSizeText: "File Size: Not available"
+        uploadDateText: "Uploaded: Not available"
+        viewsText: "Views: Not available"
+        commentsText: ""
+        showComments: false
         
         ' Helper modules
         infoLoader: DetailViewModel_InfoLoader()
