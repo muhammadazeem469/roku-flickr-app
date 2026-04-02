@@ -9,14 +9,14 @@
     <interface>
         <!-- Data fields -->
         <field id="imageModel" type="assocarray" alwaysNotify="true" />
-        <field id="showTitle" type="boolean" value="true" />
+        <field id="showTitle" type="boolean" value="false" />
 
-        <!-- Size configuration -->
-        <field id="cardWidth" type="float" value="250" />
-        <field id="cardHeight" type="float" value="250" />
+        <!-- RowList item protocol: set by RowList when itemComponentName is used -->
+        <field id="itemContent" type="node" />
 
-        <!-- State fields (internal) -->
-        <field id="focused" type="boolean" value="false" alwaysNotify="true" />
+        <!-- Size configuration — matches RowList rowItemSize -->
+        <field id="cardWidth"  type="float" value="280" />
+        <field id="cardHeight" type="float" value="210" />
     </interface>
 
     <children>
@@ -34,7 +34,7 @@
             id="placeholder"
             width="250"
             height="250"
-            color="0x333333"
+            color="0x1A1A1AFF"
             visible="true"
         />
 
@@ -47,7 +47,7 @@
             horizAlign="center"
             vertAlign="center"
             font="font:SmallSystemFont"
-            color="0xCCCCCC"
+            color="0xCCCCCCFF"
             visible="true"
         />
 
@@ -69,27 +69,11 @@
             id="thumbnail"
             width="250"
             height="250"
-            loadDisplayMode="scaleToFit"
+            loadDisplayMode="scaleToZoom"
             loadingBitmapOpacity="0.0"
             failedBitmapOpacity="0.0"
             visible="false"
         />
-
-        <!-- Focus Border -->
-        <Rectangle
-            id="focusBorder"
-            width="250"
-            height="250"
-            color="0xFF6B9D"
-            opacity="0.0"
-        >
-            <Rectangle
-                width="244"
-                height="244"
-                translation="[3, 3]"
-                color="0x000000"
-            />
-        </Rectangle>
 
         <!-- Title Label (below image) -->
         <Label

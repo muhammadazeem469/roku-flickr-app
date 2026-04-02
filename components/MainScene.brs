@@ -505,8 +505,8 @@ sub configureRowList()
     m.rowList.rowHeights               = [290]
     m.rowList.drawFocusFeedback        = true
     m.rowList.drawFocusFeedbackOnTop   = true
-    m.rowList.focusFootprintBlendColor = "0xFF6B9DFF"
-    m.rowList.focusBitmapBlendColor    = "0xFF6B9DFF"
+    m.rowList.focusBitmapBlendColor    = "0xFF6B9DFF"   ' pink focus box on current item
+    m.rowList.focusFootprintBlendColor = "0x00000000"   ' transparent — no per-row ghost
     m.rowList.rowLabelColor            = "0xCCCCCCCC"
     ' FG-022: rowLabelColor is per-row settable — we override
     ' individual rows to red when showing error messages.
@@ -620,9 +620,51 @@ sub openDetailScreen(imageModel as Object)
     m.detailScene = CreateObject("roSGNode", "DetailScene")
     if m.detailScene = invalid then return
 
-    m.detailScene.imageModel = imageModel
+    ' 1. Attach to scene tree — node starts off-screen at x=1920 (set in DetailScene init)
     m.detailScene.observeField("closeRequested", "onDetailClosed")
     m.top.appendChild(m.detailScene)
+
+    ' 2. Store imageModel — will be applied AFTER slide-in completes.
+    '    Setting imageModel triggers onImageModelSet() synchronously on the render
+    '    thread, which starts loading the large image (url_large/url_medium Poster)
+    '    and lays out the full contentGroup. If this runs while the animation is
+    '    also in progress the render thread is overloaded — causing the mid-animation
+    '    stutter seen on first open (image not cached). Second open is smooth because
+    '    the image is already in Roku's bitmap cache.
+    '    Fix: animate first (scene slides in showing its loading spinner), then
+    '    set imageModel once the render thread has nothing else to do.
+    m.pendingImageModel = imageModel
+
+    ' 3. Start slide-in immediately — render thread only animates a translation
+    slideInAnim = m.top.createChild("Animation")
+    slideInAnim.duration     = 0.3
+    slideInAnim.easeFunction = "outCubic"
+    slideInInterp = slideInAnim.createChild("Vector2DFieldInterpolator")
+    slideInInterp.key           = [0.0, 1.0]
+    slideInInterp.keyValue      = [[1920.0, 0.0], [0.0, 0.0]]
+    slideInInterp.fieldToInterp = "detailSceneNode.translation"
+    slideInAnim.control = "start"
+
+    ' 4. After animation finishes, hand off imageModel (matches animation duration)
+    slideInTimer = CreateObject("roSGNode", "Timer")
+    slideInTimer.duration = 0.3
+    slideInTimer.repeat   = false
+    slideInTimer.observeField("fire", "onSlideInComplete")
+    m.slideInTimer = slideInTimer
+    slideInTimer.control = "start"
+end sub
+
+
+' ******************************************************
+' Fired when slide-in animation duration has elapsed.
+' Now safe to set imageModel — render thread is idle.
+' ******************************************************
+sub onSlideInComplete()
+    m.slideInTimer = invalid
+    if m.detailScene <> invalid and m.pendingImageModel <> invalid then
+        m.detailScene.imageModel = m.pendingImageModel
+        m.pendingImageModel = invalid
+    end if
 end sub
 
 
