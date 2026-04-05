@@ -10,6 +10,8 @@ function FlickrService_ApiMethods() as Object
         DEFAULT_PAGE:     apiCfg.DEFAULT_PAGE
         DEFAULT_PER_PAGE: apiCfg.DEFAULT_PER_PAGE
 
+        responseParser:       FlickrService_ResponseParser()
+
         getInterestingImages: FlickrService_ApiMethods_getInterestingImages
         searchImagesByTag:    FlickrService_ApiMethods_searchImagesByTag
         getRecentImages:      FlickrService_ApiMethods_getRecentImages
@@ -144,9 +146,8 @@ function FlickrService_ApiMethods_makePhotosRequest(url as String) as Object
         return FlickrService_createErrorResponse(parsedResponse.error)
     end if
     
-    ' Parse photos from response using ResponseParser
-    responseParser = FlickrService_ResponseParser()
-    return responseParser.parsePhotosResponse(parsedResponse.data)
+    ' Parse photos from response using shared ResponseParser instance
+    return m.responseParser.parsePhotosResponse(parsedResponse.data)
 end function
 
 

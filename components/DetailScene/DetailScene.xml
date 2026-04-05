@@ -308,6 +308,6 @@
     <script type="text/brightscript" uri="pkg:/source/viewmodels/DetailViewModel.brs" />
 
     <!-- Scene Logic -->
-    <script type="text/brightscript" uri="pkg:/components/DetailScene.brs" />
+    <script type="text/brightscript" uri="pkg:/components/DetailScene/DetailScene.brs" />
 
 </component>

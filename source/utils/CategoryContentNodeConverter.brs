@@ -50,7 +50,6 @@ return invalid
                 node.appendChild(imageNode)
             end if
         end for
-else
     end if
     
     return node

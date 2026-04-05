@@ -23,52 +23,77 @@
         <!-- Background/Container -->
         <Rectangle
             id="cardBackground"
-            width="250"
-            height="250"
+            width="280"
+            height="210"
             color="0x000000"
             opacity="0.0"
         />
 
-        <!-- Image Placeholder (shown while loading or on error) -->
+        <!-- Dark placeholder shown in all non-image states -->
         <Rectangle
             id="placeholder"
-            width="250"
-            height="250"
+            width="280"
+            height="210"
             color="0x1A1A1AFF"
             visible="true"
         />
 
-        <!-- Loading indicator (center of placeholder) -->
+        <!-- "Loading..." shown while the API request is in progress -->
         <Label
-            id="loadingLabel"
+            id="loadingTextLabel"
             text="Loading..."
-            width="250"
-            height="250"
+            width="280"
+            height="210"
             horizAlign="center"
             vertAlign="center"
             font="font:SmallSystemFont"
-            color="0xCCCCCCFF"
-            visible="true"
+            color="0x888888FF"
+            visible="false"
         />
 
-        <!-- Error indicator -->
+        <!-- Circular arrow retry icon shown after a load failure -->
+        <Poster
+            id="retryIconPoster"
+            uri="pkg:/images/retry_icon.png"
+            width="80"
+            height="80"
+            translation="[100, 40]"
+            loadDisplayMode="scaleToFit"
+            visible="false"
+        />
+
+        <!-- Hint shown below retry icon -->
+        <Label
+            id="retryHintLabel"
+            text="Press OK to retry"
+            translation="[0, 140]"
+            width="280"
+            height="42"
+            horizAlign="center"
+            vertAlign="center"
+            font="font:SmallSystemFont"
+            color="0xAAAAAAFF"
+            visible="false"
+        />
+
+        <!-- Error indicator for image download failures -->
         <Label
             id="errorLabel"
             text="✕"
-            width="250"
-            height="250"
+            width="280"
+            height="210"
             horizAlign="center"
             vertAlign="center"
             font="font:LargeSystemFont"
-            color="0xFF0000"
+            color="0xFF4444FF"
             visible="false"
         />
 
         <!-- Thumbnail Image -->
         <Poster
             id="thumbnail"
-            width="250"
-            height="250"
+            width="280"
+            height="210"
             loadDisplayMode="scaleToZoom"
             loadingBitmapOpacity="0.0"
             failedBitmapOpacity="0.0"
@@ -78,8 +103,8 @@
         <!-- Title Label (below image) -->
         <Label
             id="titleLabel"
-            translation="[0, 255]"
-            width="250"
+            translation="[0, 215]"
+            width="280"
             height="40"
             horizAlign="center"
             vertAlign="top"
@@ -92,5 +117,5 @@
         />
     </children>
 
-    <script type="text/brightscript" uri="pkg:/components/ImageCard.brs" />
+    <script type="text/brightscript" uri="pkg:/components/ImageCard/ImageCard.brs" />
 </component>

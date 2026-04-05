@@ -48,9 +48,9 @@ function NetworkValidator_validateUrl(url as String) as Boolean
         return false
     end if
     
-    ' Check for http/https
-    if url.Instr("http://") <> 0 and url.Instr("https://") <> 0 then
-return false
+    ' Check for http/https — reject if neither scheme is present
+    if url.Instr("http://") = 0 and url.Instr("https://") = 0 then
+        return false
     end if
     
     ' Basic length check

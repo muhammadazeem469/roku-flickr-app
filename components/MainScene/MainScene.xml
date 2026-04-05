@@ -204,6 +204,15 @@
             rowFocusAnimationStyle="floatingFocus"
             vertFocusAnimationStyle="floatingFocus"
         />
+
+        <!-- ============================================
+             SPLASH OVERLAY — rendered on top of everything.
+             SplashScene is a Group that plays the branded
+             intro animation while content loads behind it.
+             MainScene removes it when done = true fires.
+             ============================================ -->
+        <SplashScene id="splashOverlay" />
+
     </children>
 
     <!-- Validators -->
@@ -253,5 +262,9 @@
     <script type="text/brightscript" uri="pkg:/source/viewmodels/MainViewModel.brs" />
 
     <!-- Scene logic -->
-    <script type="text/brightscript" uri="pkg:/components/MainScene.brs" />
+    <script type="text/brightscript" uri="pkg:/components/MainScene/MainScene_LoadingState.brs" />
+    <script type="text/brightscript" uri="pkg:/components/MainScene/MainScene_CategoryLoader.brs" />
+    <script type="text/brightscript" uri="pkg:/components/MainScene/MainScene_RowList.brs" />
+    <script type="text/brightscript" uri="pkg:/components/MainScene/MainScene_Navigation.brs" />
+    <script type="text/brightscript" uri="pkg:/components/MainScene/MainScene.brs" />
 </component>

@@ -20,8 +20,8 @@ function CreateMainViewModel() as Object
         selectedCategoryIndex: 0
         selectedImageIndex: 0
         
-        ' Events (for view to observe)
-        categoryDataChanged: false
+        ' Events (for view to observe) — counter increments on every update
+        categoryUpdateCount: 0
         navigationRequested: false
         
         ' Helper modules
@@ -43,13 +43,13 @@ end function
 
 ' Initialize ViewModel - Load categories from config
 function MainViewModel_init() as Void
-m.isInitializing = true
-    
+    m.isInitializing = true
+
     ' Load category configurations
     categoryConfigs = GetCategories()
-    
+
     if categoryConfigs = invalid or categoryConfigs.Count() = 0 then
-m.stateManager.setGlobalError(m, "Failed to load category configurations")
+        m.stateManager.setGlobalError(m, "Failed to load category configurations")
         return
     end if
     
@@ -61,15 +61,15 @@ m.stateManager.setGlobalError(m, "Failed to load category configurations")
     end for
     
     m.categories = categories
-m.isInitializing = false
+    m.isInitializing = false
 end function
 
 
 ' Load all categories using hybrid strategy (Featured first, then rest)
 ' FG-020: Real Flickr API integration
 function MainViewModel_loadAllCategories() as Void
-if m.categories.Count() = 0 then
-return
+    if m.categories.Count() = 0 then
+        return
     end if
     
     ' Delegate to CategoryLoader which implements hybrid loading:
@@ -115,7 +115,7 @@ end function
 
 ' Cleanup resources
 function MainViewModel_cleanup() as Void
-' Clear categories
+    ' Clear categories
     if m.categories <> invalid then
         m.categories.Clear()
     end if
