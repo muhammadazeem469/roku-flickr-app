@@ -9,29 +9,33 @@ sub Main()
     ' script scope and are not available here in main.brs — calling them
     ' crashes the app before the screen is ever created.
     ' Tests should be run from a dedicated test scene, not the entry point.
-' Initialize screen
-screen = CreateObject("roSGScreen")
+
+    ' Initialize screen
+    screen = CreateObject("roSGScreen")
     if screen = invalid then
-return
+        return
     end if
-' Initialize message port
-port = CreateObject("roMessagePort")
+
+    ' Initialize message port
+    port = CreateObject("roMessagePort")
     screen.setMessagePort(port)
-' Create and display main scene
-scene = screen.CreateScene("MainScene")
+
+    ' Create and display main scene
+    scene = screen.CreateScene("MainScene")
     if scene = invalid then
-return
+        return
     end if
-' Pass UI configuration to scene
+
     scene.appBgColor   = "0x000000"
     scene.appTextColor = "0xFFFFFF"
-screen.show()
-' Main event loop
+    screen.show()
+
+    ' Main event loop
     while true
         msg = wait(0, port)
         if type(msg) = "roSGScreenEvent" then
             if msg.isScreenClosed() then
-return
+                return
             end if
         end if
     end while

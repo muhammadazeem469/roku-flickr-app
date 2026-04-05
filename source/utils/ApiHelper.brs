@@ -13,11 +13,16 @@ function BuildFlickrURL(method as String, additionalParams as Object) as String
     url = url + "&format=" + config.FORMAT
     url = url + "&nojsoncallback=" + config.NO_JSON_CALLBACK
     
-    ' Add additional parameters if provided
+    ' Add additional parameters if provided (skip empty or invalid values)
     if additionalParams <> invalid then
         for each key in additionalParams
             value = additionalParams[key]
-            url = url + "&" + key + "=" + Box(value).ToStr()
+            if value <> invalid then
+                strValue = Box(value).ToStr()
+                if strValue <> "" then
+                    url = url + "&" + key + "=" + strValue
+                end if
+            end if
         end for
     end if
     

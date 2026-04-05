@@ -10,7 +10,6 @@ end sub
 
 ' Load photo information from Flickr API
 sub loadPhotoInfo()
-
     photoId = m.top.photoId
 
     if photoId = invalid or photoId = "" then
@@ -18,41 +17,24 @@ sub loadPhotoInfo()
         return
     end if
 
-    ' Real API call
-    apiKey = GetApiConfig().API_KEY
-    url = GetApiConfig().BASE_URL
-    url = url + "?method=flickr.photos.getInfo"
-    url = url + "&api_key=" + apiKey
-    url = url + "&photo_id=" + photoId
-    url = url + "&format=json"
-    url = url + "&nojsoncallback=1"
+    url = BuildPhotoInfoURL(photoId)
 
-    request = CreateObject("roUrlTransfer")
+    config = GetNetworkConfig()
+    response = HttpClient_makeRequest(url, config.DEFAULT_TIMEOUT)
 
-    if request = invalid then
-        m.top.result = ResponseBuilder_error("Failed to create HTTP request")
+    if not response.success then
+        m.top.result = ResponseBuilder_error(response.error)
         return
     end if
 
-    request.SetUrl(url)
-    request.EnablePeerVerification(false)
-    request.EnableHostVerification(false)
-    request.SetCertificatesFile("common:/certs/ca-bundle.crt")
-    request.InitClientCertificates()
+    parsedResponse = JsonParser_parse(response)
 
-    response = request.GetToString()
-
-    if response = invalid or response = "" then
-        m.top.result = ResponseBuilder_error("Empty response from API")
+    if not parsedResponse.success then
+        m.top.result = ResponseBuilder_error(parsedResponse.error)
         return
     end if
 
-    json = ParseJson(response)
-
-    if json = invalid then
-        m.top.result = ResponseBuilder_error("Invalid JSON response")
-        return
-    end if
+    json = parsedResponse.data
 
     if json.stat <> invalid and json.stat = "fail" then
         errorMsg = "API Error"

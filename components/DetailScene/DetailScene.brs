@@ -62,24 +62,11 @@ showError("No image data available")
     end if
 
     
-    ' Print all fields
-    if Type(imageModel) = "roAssociativeArray" then
-        for each key in imageModel
-            value = imageModel[key]
-            if Type(value) = "roString" or Type(value) = "String" then
-
-            else if Type(value) = "roInt" or Type(value) = "Integer" or Type(value) = "roInteger" then
-
-            else
-end if
-        end for
-    end if
-' Set focus to overlay rectangle so we receive key events
+    ' Set focus to overlay rectangle so we receive key events
     focusOverlay = m.top.findNode("focusOverlay")
     if focusOverlay <> invalid then
         focusOverlay.setFocus(true)
-else
-end if
+    end if
     
     ' STEP 1: Initialize DetailViewModel with imageModel
 m.viewModel = CreateDetailViewModel(imageModel)

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- ******************************************************
+  ** SplashScene.xml — Rounded F logo with write animation
+  **
+  ** F TECHNIQUE — "overlapping rounded strokes":
+  **   Three cream-coloured Rectangles with high
+  **   cornerRoundingPercentage overlap to form the F.
+  **   All same colour → they merge seamlessly.
+  **
+  **   fStem   : 85 × 460  crp=0.9  → near-capsule vertical stroke
+  **   fTopBar : 260 × 90  crp=0.9  → rounded pill, full F width
+  **   fMidBar : 185 × 82  crp=0.9  → rounded pill, mid level
+  **
+  **   All three share the same left edge (x = -130) and the
+  **   stem shares the same top edge (y = -230) as fTopBar,
+  **   so they overlap cleanly at every junction.
+  **
+  ** WRITE ANIMATION (mask-slide technique):
+  **   A background-coloured Rectangle mask sits on top of
+  **   each stroke, initially covering it completely.
+  **   BRS slides each mask away in "pen-writing" order:
+  **
+  **     t=0.00  maskTopBar  → slides LEFT  (right end appears first)
+  **     t=0.35  maskStem    → slides DOWN  (grows from top bar down)
+  **     t=0.55  maskMidBar  → slides LEFT  (right end appears first)
+  **     t=1.00  write phase done → FLICKR text fades in
+  **
+  ** FLICKR TEXT:
+  **   System font used here. For fully rounded letterforms,
+  **   drop a rounded TTF (e.g. Nunito, Poppins) into
+  **   pkg:/fonts/ and reference it with a <Font> node.
+  **
+  ** COLOUR PALETTE:
+  **   Background : 0x181210FF  (deep warm dark)
+  **   F / text   : 0xF0DEB8FF  (warm cream — matches reference)
+  **   Mask       : 0x181210FF  (MUST match background exactly)
+  ****************************************************** -->
+
+<component name="SplashScene" extends="Group">
+
+    <interface>
+        <field    id="done"      type="boolean" value="false" />
+        <function name="skipSplash" />
+    </interface>
+
+    <script type="text/brightscript" uri="pkg:/components/SplashScene/SplashScene.brs" />
+
+    <children>
+
+        <!-- 1. Deep warm background -->
+        <Rectangle
+            id="splashBg"
+            width="1920"
+            height="1080"
+            color="0x181210FF"
+        />
+
+        <!-- 2. F logo group, centred at screen (960, 490) -->
+        <Group id="fGroup" translation="[960, 490]">
+
+            <!-- ── Cream strokes ── -->
+
+            <!-- Stroke A: vertical stem  (85 × 460, capsule-rounded) -->
+            <Rectangle
+                id="fStem"
+                translation="[-130, -230]"
+                width="85"
+                height="460"
+                color="0xF0DEB8FF"
+                cornerRoundingPercentage="0.9"
+            />
+
+            <!-- Stroke B: top horizontal bar  (260 × 90, pill-rounded) -->
+            <Rectangle
+                id="fTopBar"
+                translation="[-130, -230]"
+                width="260"
+                height="90"
+                color="0xF0DEB8FF"
+                cornerRoundingPercentage="0.9"
+            />
+
+            <!-- Stroke C: middle horizontal bar  (185 × 82, pill-rounded) -->
+            <Rectangle
+                id="fMidBar"
+                translation="[-130, -45]"
+                width="185"
+                height="82"
+                color="0xF0DEB8FF"
+                cornerRoundingPercentage="0.9"
+            />
+
+            <!-- ── Write-reveal masks (same colour as splashBg) ──
+                 Each mask covers its stroke completely at startup.
+                 BRS slides each away in sequence (see pipeline above).
+                 Rendered AFTER the strokes so they sit on top. -->
+
+            <!-- Mask for top bar: starts at [-130,-230], slides LEFT 260px -->
+            <Rectangle
+                id="maskTopBar"
+                translation="[-130, -230]"
+                width="260"
+                height="90"
+                color="0x181210FF"
+            />
+
+            <!-- Mask for stem: starts at [-130,-230], slides DOWN 460px -->
+            <Rectangle
+                id="maskStem"
+                translation="[-130, -230]"
+                width="85"
+                height="460"
+                color="0x181210FF"
+            />
+
+            <!-- Mask for mid bar: starts at [-130,-45], slides LEFT 185px -->
+            <Rectangle
+                id="maskMidBar"
+                translation="[-130, -45]"
+                width="185"
+                height="82"
+                color="0x181210FF"
+            />
+
+        </Group>
+
+        <!-- 3. Blossom: full-screen white tonal swell at peak -->
+        <Rectangle
+            id="blossomOverlay"
+            width="1920"
+            height="1080"
+            color="0xFFFFFFFF"
+            opacity="0"
+        />
+
+        <!-- 4. FLICKR wordmark
+             F bottom screen y = 490+230 = 720, +55 gap → final y=775.
+             Starts 18px below (y=793) for the subtle rise animation. -->
+        <Label
+            id="logoText"
+            text="F  L  I  C  K  R"
+            translation="[710, 793]"
+            width="500"
+            horizAlign="center"
+            font="font:LargeBoldSystemFont"
+            color="0xF0DEB8FF"
+            opacity="0"
+        />
+
+        <!-- 5. Final fade-to-black overlay -->
+        <Rectangle
+            id="splashFadeOut"
+            width="1920"
+            height="1080"
+            color="0x000000FF"
+            opacity="0"
+        />
+
+    </children>
+
+</component>

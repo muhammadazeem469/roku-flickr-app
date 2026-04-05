@@ -84,7 +84,7 @@ function GetCategories() as Object
             method: "flickr.photos.getPopular"
             tags: ""
             display_name: "Popular"
-            description: "Most popular photos on Flickr"
+            description: "Popular photos on Flickr"
         }
         {
             name: "Recent"

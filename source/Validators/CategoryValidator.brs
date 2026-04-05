@@ -32,15 +32,6 @@ function CategoryValidator_hasRequiredFields(category as Object) as Boolean
     hasName = (category.name <> invalid and category.name <> "")
     hasMethod = (category.method <> invalid and category.method <> "")
     
-    if not hasId then
-end if
-    
-    if not hasName then
-end if
-    
-    if not hasMethod then
-end if
-    
     return hasId and hasName and hasMethod
 end function
 

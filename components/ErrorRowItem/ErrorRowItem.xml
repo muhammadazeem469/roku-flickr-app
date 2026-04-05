@@ -84,5 +84,5 @@
         />
     </children>
 
-    <script type="text/brightscript" uri="pkg:/components/ErrorRowItem.brs" />
+    <script type="text/brightscript" uri="pkg:/components/ErrorRowItem/ErrorRowItem.brs" />
 </component>

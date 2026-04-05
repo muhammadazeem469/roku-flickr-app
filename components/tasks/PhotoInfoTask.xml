@@ -14,7 +14,19 @@
         <field id="result" type="assocarray" />
     </interface>
 
+    <!-- Config -->
     <script type="text/brightscript" uri="pkg:/source/config/AppConfig.brs" />
+    <script type="text/brightscript" uri="pkg:/source/config/NetworkConfig.brs" />
+
+    <!-- Utils -->
+    <script type="text/brightscript" uri="pkg:/source/utils/ApiHelper.brs" />
+
+    <!-- Network Layer -->
+    <script type="text/brightscript" uri="pkg:/source/network/JsonParser.brs" />
+    <script type="text/brightscript" uri="pkg:/source/network/HttpClient.brs" />
+
+    <!-- Response builder -->
     <script type="text/brightscript" uri="pkg:/source/utils/ResponseBuilder.brs" />
+
     <script type="text/brightscript" uri="pkg:/components/tasks/PhotoInfoTask.brs" />
 </component>
