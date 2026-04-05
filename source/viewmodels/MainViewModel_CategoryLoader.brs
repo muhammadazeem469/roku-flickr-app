@@ -33,8 +33,8 @@ end function
 ' NOTE: This version needs to be called from MainScene with scene context
 ' ******************************************************
 function MainViewModel_CategoryLoader_loadAllCategories(viewModel as Object) as Void
-if viewModel.categories.Count() = 0 then
-viewModel.stateManager.setGlobalError(viewModel, "No categories configured")
+    if viewModel.categories.Count() = 0 then
+        viewModel.stateManager.setGlobalError(viewModel, "No categories configured")
         return
     end if
     
@@ -65,7 +65,7 @@ end function
 ' Load category data - synchronous version for testing only
 ' ******************************************************
 function MainViewModel_CategoryLoader_loadCategory(viewModel as Object, categoryIndex as Integer) as Void
-' Validate index
+    ' Validate index
     if categoryIndex < 0 or categoryIndex >= viewModel.categories.Count() then
         return
     end if
@@ -82,7 +82,7 @@ end function
 ' Load category using Task (called from MainScene)
 ' ******************************************************
 function MainViewModel_CategoryLoader_loadCategoryWithTask(viewModel as Object, categoryIndex as Integer, scene as Object) as Object
-' Validate index
+    ' Validate index
     if categoryIndex < 0 or categoryIndex >= viewModel.categories.Count() then
         return invalid
     end if
@@ -92,7 +92,7 @@ function MainViewModel_CategoryLoader_loadCategoryWithTask(viewModel as Object, 
     ' Set loading state
     category = category.setLoading(true)
     viewModel.categories[categoryIndex] = category
-    viewModel.categoryDataChanged = not viewModel.categoryDataChanged
+    viewModel.categoryUpdateCount = viewModel.categoryUpdateCount + 1
 
     ' Debug simulation: intercept before creating the task
     config = GetApiConfig()
@@ -122,16 +122,17 @@ function MainViewModel_CategoryLoader_loadCategoryWithTask(viewModel as Object, 
         return invalid
     end if
     
-    ' Set task parameters
+    ' Set task parameters (pagination defaults from config)
     task.categoryMethod = category.method
     task.categoryTags = category.tags
-    task.page = 1
-    task.perPage = 20
-    
+    task.page = config.DEFAULT_PAGE
+    task.perPage = config.DEFAULT_PER_PAGE
+
     ' Store category index on task for callback
     task.addField("categoryIndex", "integer", false)
     task.categoryIndex = categoryIndex
-' Return task so MainScene can observe it
+
+    ' Return task so MainScene can observe it
     return task
 end function
 
@@ -141,7 +142,7 @@ end function
 ' ******************************************************
 function MainViewModel_CategoryLoader_parseApiResponse(viewModel as Object, categoryIndex as Integer, result as Object) as Void
     category = viewModel.categories[categoryIndex]
-' Check if API call was successful
+    ' Check if API call was successful
     if not result.success then
 
         errorType = ""
@@ -188,7 +189,7 @@ images = []
     viewModel.categories[categoryIndex] = category
     
     ' Trigger view update
-    viewModel.categoryDataChanged = not viewModel.categoryDataChanged
+    viewModel.categoryUpdateCount = viewModel.categoryUpdateCount + 1
 end function
 
 
@@ -200,7 +201,7 @@ end function
 ' ******************************************************
 function MainViewModel_CategoryLoader_handleApiError(viewModel as Object, categoryIndex as Integer, errorMessage as String, errorType as String) as Void
     category = viewModel.categories[categoryIndex]
-' Clear loading state and set error
+    ' Clear loading state and set error
     category = category.setLoading(false)
     category = category.setError(errorMessage)
 
@@ -211,7 +212,7 @@ function MainViewModel_CategoryLoader_handleApiError(viewModel as Object, catego
     viewModel.categories[categoryIndex] = category
 
     ' Trigger view update
-    viewModel.categoryDataChanged = not viewModel.categoryDataChanged
+    viewModel.categoryUpdateCount = viewModel.categoryUpdateCount + 1
 end function
 
 
@@ -233,8 +234,8 @@ end function
 ' Refresh category data (clear and reload)
 ' ******************************************************
 function MainViewModel_CategoryLoader_refreshCategory(viewModel as Object, categoryIndex as Integer) as Void
-if categoryIndex < 0 or categoryIndex >= viewModel.categories.Count() then
-return
+    if categoryIndex < 0 or categoryIndex >= viewModel.categories.Count() then
+        return
     end if
 
     category = viewModel.categories[categoryIndex]

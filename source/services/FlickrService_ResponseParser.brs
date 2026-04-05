@@ -54,7 +54,7 @@ function FlickrService_ResponseParser_parsePhotosResponse(json as Object) as Obj
 
     paginationInfo = m.extractPaginationInfo(json.photos)
 
-    if json.photos.photo = invalid then
+    if json.photos.photo = invalid or Type(json.photos.photo) <> "roArray" then
         return {
             success:   true
             data:      []

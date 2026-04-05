@@ -69,10 +69,7 @@ return false
     
     ' Check if more pages available
     if category.totalPages > 0 then
-        canLoad = (category.page < category.totalPages)
-        if not canLoad then
-end if
-        return canLoad
+        return (category.page < category.totalPages)
     end if
     
     ' If totalPages not set yet, allow loading

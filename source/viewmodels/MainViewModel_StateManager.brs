@@ -20,13 +20,13 @@ function MainViewModel_StateManager_setGlobalError(viewModel as Object, errorMes
     viewModel.isInitializing = false
     
     ' Trigger view update
-    viewModel.categoryDataChanged = not viewModel.categoryDataChanged
+    viewModel.categoryUpdateCount = viewModel.categoryUpdateCount + 1
 end function
 
 
 ' Clear global error state
 function MainViewModel_StateManager_clearGlobalError(viewModel as Object) as Void
-viewModel.hasError = false
+    viewModel.hasError = false
     viewModel.errorMessage = ""
 end function
 
